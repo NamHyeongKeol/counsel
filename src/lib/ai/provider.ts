@@ -113,21 +113,61 @@ export async function chat(options: ChatOptions): Promise<string> {
         (process.env.AI_PROVIDER as AIProvider) ||
         "openai";
 
+    const model = provider === "anthropic"
+        ? "claude-sonnet-4-20250514"
+        : provider === "google"
+            ? "gemini-2.0-flash"
+            : getModelName(provider);
+
+    // 🔍 서버 로그: AI 요청 정보
+    console.log("\n" + "=".repeat(60));
+    console.log("🤖 [AI Request]");
+    console.log("=".repeat(60));
+    console.log(`📌 Provider: ${provider}`);
+    console.log(`📌 Model: ${model}`);
+    console.log(`📌 Messages count: ${options.messages.length}`);
+    console.log("\n📝 System Prompt (첫 200자):");
+    console.log(UNNI_SYSTEM_PROMPT.slice(0, 200) + "...\n");
+    console.log("💬 Conversation History:");
+    options.messages.forEach((m, i) => {
+        const preview = m.content.length > 100 ? m.content.slice(0, 100) + "..." : m.content;
+        console.log(`  [${i + 1}] ${m.role}: ${preview}`);
+    });
+    console.log("=".repeat(60) + "\n");
+
+    const startTime = Date.now();
+
     try {
+        let response: string;
         switch (provider) {
             case "anthropic":
-                return await chatWithAnthropic(options.messages);
+                response = await chatWithAnthropic(options.messages);
+                break;
             case "google":
-                return await chatWithGoogle(options.messages);
+                response = await chatWithGoogle(options.messages);
+                break;
             case "openai":
             case "xai":
             case "deepseek":
-                return await chatWithOpenAI(options.messages, provider);
+                response = await chatWithOpenAI(options.messages, provider);
+                break;
             default:
-                return await chatWithOpenAI(options.messages, "openai");
+                response = await chatWithOpenAI(options.messages, "openai");
         }
+
+        // 🔍 서버 로그: AI 응답 정보
+        const duration = Date.now() - startTime;
+        console.log("\n" + "-".repeat(60));
+        console.log("✅ [AI Response]");
+        console.log("-".repeat(60));
+        console.log(`⏱️  Duration: ${duration}ms`);
+        console.log(`📝 Response (첫 200자):`);
+        console.log(response.slice(0, 200) + (response.length > 200 ? "..." : ""));
+        console.log("-".repeat(60) + "\n");
+
+        return response;
     } catch (error) {
-        console.error("AI Chat Error:", error);
+        console.error("\n❌ [AI Error]", error);
         throw new Error("AI 응답 생성 중 오류가 발생했습니다.");
     }
 }
