@@ -76,6 +76,7 @@ function getTechnicalModelName(modelId: AIModelId): string {
         case "gemini-3-flash-preview": return "gemini-3-flash-preview";
         case "gemini-3-pro-preview": return "gemini-3-pro-preview";
         case "claude-opus-4-5-20251101": return "claude-opus-4-5-20251101";
+        case "gpt-5.2": return "gpt-5.2";
         default: return "gemini-3-flash-preview";
     }
 }
@@ -256,6 +257,8 @@ export async function streamChat(options: ChatOptions, callbacks: StreamCallback
             await streamGoogle(options.messages, systemPrompt, modelId, callbacks);
         } else if (provider === "anthropic") {
             await streamAnthropic(options.messages, systemPrompt, modelId, callbacks);
+        } else if (provider === "openai") {
+            await streamOpenAI(options.messages, systemPrompt, modelId, callbacks);
         } else {
             // 다른 제공자는 현재 스트리밍 미구현 (필요시 추가)
             const result = await chat(options);
@@ -339,6 +342,44 @@ async function streamAnthropic(messages: Message[], systemPrompt: string, modelI
             }
         } else if (event.type === "message_delta") {
             outputTokens = event.usage.output_tokens;
+        }
+    }
+
+    callbacks.onDone(fullText, { inputTokens, outputTokens });
+}
+
+async function streamOpenAI(messages: Message[], systemPrompt: string, modelId: AIModelId, callbacks: StreamCallbacks) {
+    const client = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const technicalModel = getTechnicalModelName(modelId);
+
+    const stream = await client.chat.completions.create({
+        model: technicalModel,
+        max_completion_tokens: 1024,
+        messages: [
+            { role: "system", content: systemPrompt },
+            ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+        ],
+        stream: true,
+        stream_options: { include_usage: true },
+    });
+
+    let fullText = "";
+    let inputTokens: number | null = null;
+    let outputTokens: number | null = null;
+
+    for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta;
+        if (delta?.content) {
+            fullText += delta.content;
+            callbacks.onChunk(delta.content);
+        }
+        // 사용량 정보 (마지막 청크에서 제공될 수 있음)
+        if (chunk.usage) {
+            inputTokens = chunk.usage.prompt_tokens;
+            outputTokens = chunk.usage.completion_tokens;
         }
     }
 

@@ -8,6 +8,9 @@ interface MessageBubbleProps {
     content: string;
     createdAt?: Date;
     isLoading?: boolean;
+    model?: string | null;
+    inputTokens?: number | null;
+    outputTokens?: number | null;
     selectMode?: boolean;
     isSelected?: boolean;
     onSelect?: () => void;
@@ -34,6 +37,9 @@ export function MessageBubble({
     content,
     createdAt,
     isLoading,
+    model,
+    inputTokens,
+    outputTokens,
     selectMode,
     isSelected,
     onSelect,
@@ -107,7 +113,13 @@ export function MessageBubble({
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
                 )}
                 {createdAt && !isLoading && (
-                    <div className="flex items-center justify-end gap-2 mt-1">
+                    <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
+                        {/* Assistant 메시지만 모델명과 토큰 표시 */}
+                        {!isUser && model && (
+                            <span className="text-[10px] text-white/40">
+                                {model}{inputTokens != null && outputTokens != null ? ` · ${inputTokens}/${outputTokens}` : ''}
+                            </span>
+                        )}
                         <span className={cn(
                             "text-[10px]",
                             isUser ? "text-white/70" : "text-white/50"

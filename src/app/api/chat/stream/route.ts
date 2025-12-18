@@ -161,6 +161,9 @@ export async function POST(request: NextRequest) {
                                     type: "done",
                                     assistantMessageId: assistantMessage.id,
                                     createdAt: assistantMessage.createdAt,
+                                    model: modelId,
+                                    inputTokens: metadata.inputTokens,
+                                    outputTokens: metadata.outputTokens,
                                 })}\n\n`));
 
                                 controller.close();

@@ -15,6 +15,9 @@ interface Message {
     content: string;
     createdAt: Date;
     isLoading?: boolean;
+    model?: string | null;
+    inputTokens?: number | null;
+    outputTokens?: number | null;
 }
 
 interface ModalState {
@@ -109,6 +112,9 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                         role: m.role as "user" | "assistant",
                         content: m.content,
                         createdAt: m.createdAt,
+                        model: m.model,
+                        inputTokens: m.inputTokens,
+                        outputTokens: m.outputTokens,
                     }))
                 );
             } else if (conversationId && !hasCreatedGreeting.current) {
@@ -217,7 +223,14 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                 realAssistantMsgId = data.assistantMessageId;
                                 setMessages((prev) => prev.map((m) =>
                                     m.id === streamingMsgId
-                                        ? { ...m, id: data.assistantMessageId, createdAt: new Date(data.createdAt) }
+                                        ? {
+                                            ...m,
+                                            id: data.assistantMessageId,
+                                            createdAt: new Date(data.createdAt),
+                                            model: data.model,
+                                            inputTokens: data.inputTokens,
+                                            outputTokens: data.outputTokens,
+                                        }
                                         : m
                                 ));
                             } else if (data.type === "error") {
@@ -455,6 +468,9 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                 content={message.isLoading ? "" : message.content}
                                 createdAt={message.createdAt}
                                 isLoading={message.isLoading}
+                                model={message.model}
+                                inputTokens={message.inputTokens}
+                                outputTokens={message.outputTokens}
                                 selectMode={selectMode}
                                 isSelected={selectedIds.has(message.id)}
                                 onSelect={() => toggleSelect(message.id)}
