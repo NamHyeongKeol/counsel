@@ -40,15 +40,19 @@ export function ChatInterface() {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    // 햄버거 메뉴 바깥 클릭 시 닫힘
+    // 햄버거 메뉴 바깥 클릭 시 닫힘 (모바일 터치 포함)
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
+        const handleClickOutside = (e: MouseEvent | TouchEvent) => {
             if (menuOpen && menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setMenuOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        document.addEventListener("touchstart", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
     }, [menuOpen]);
 
     const getOrCreateUser = trpc.getOrCreateUser.useMutation();
