@@ -197,7 +197,7 @@ export function ChatInterface() {
                         {sendMessage.isPending ? "..." : "전송"}
                     </Button>
                 </form>
-                <p className="text-center text-white/40 text-[10px] mt-2">
+                <p className="text-center text-white/40 text-[0.625rem] mt-2">
                     AI 상담은 참고용이며, 전문 상담이 필요하면 전문가를 찾아주세요.
                 </p>
             </div>
