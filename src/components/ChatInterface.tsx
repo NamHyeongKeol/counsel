@@ -7,7 +7,6 @@ import { MessageBubble } from "@/components/MessageBubble";
 import { ConversationList } from "@/components/ConversationList";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { trpc } from "@/lib/trpc/client";
-import { UNNI_GREETING } from "@/lib/prompts/unni";
 
 interface Message {
     id: string;
@@ -41,6 +40,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const hasCreatedGreeting = useRef(false);
 
     const router = useRouter();
 
@@ -99,11 +99,11 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                         createdAt: m.createdAt,
                     }))
                 );
-            } else if (conversationId) {
-                // 메시지가 없으면 인트로 메시지 생성
+            } else if (conversationId && !hasCreatedGreeting.current) {
+                // 메시지가 없으면 인트로 메시지 생성 (중복 방지)
+                hasCreatedGreeting.current = true;
                 createGreeting.mutateAsync({
                     conversationId,
-                    content: UNNI_GREETING,
                 }).then((greeting) => {
                     setMessages([{
                         id: greeting.id,
@@ -304,7 +304,6 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
         setMenuOpen(false);
         const conversation = await createConversation.mutateAsync({
             userId,
-            greeting: UNNI_GREETING,
         });
         router.push(`/chat/${conversation.id}`);
     };

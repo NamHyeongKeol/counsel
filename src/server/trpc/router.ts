@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { router, publicProcedure } from "./init";
 import { chat } from "@/lib/ai/provider";
+import { getGreeting } from "@/lib/prompts";
 
 export const appRouter = router({
     // 대화 목록 조회 (삭제되지 않은 대화방만)
     getConversations: publicProcedure
         .input(z.object({ userId: z.string() }))
-        .mutation(async ({ ctx, input }) => {
+        .query(async ({ ctx, input }) => {
             return ctx.prisma.conversation.findMany({
                 where: {
                     userId: input.userId,
@@ -28,6 +29,7 @@ export const appRouter = router({
         .input(z.object({
             userId: z.string(),
             title: z.string().optional(),
+            // greeting prop은 이제 클라이언트에서 주지 않아도 서버에서 DB 값을 찾아 넣음
             greeting: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
@@ -39,15 +41,15 @@ export const appRouter = router({
             });
 
             // 인트로 메시지 자동 추가
-            if (input.greeting) {
-                await ctx.prisma.message.create({
-                    data: {
-                        conversationId: conversation.id,
-                        role: "assistant",
-                        content: input.greeting,
-                    },
-                });
-            }
+            const greetingContent = input.greeting || await getGreeting(1);
+
+            await ctx.prisma.message.create({
+                data: {
+                    conversationId: conversation.id,
+                    role: "assistant",
+                    content: greetingContent,
+                },
+            });
 
             return conversation;
         }),
@@ -179,14 +181,15 @@ export const appRouter = router({
     createGreeting: publicProcedure
         .input(z.object({
             conversationId: z.string(),
-            content: z.string(),
+            content: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
+            const content = input.content || await getGreeting(1);
             return ctx.prisma.message.create({
                 data: {
                     conversationId: input.conversationId,
                     role: "assistant",
-                    content: input.content,
+                    content: content,
                 },
             });
         }),

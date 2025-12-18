@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
-import { UNNI_GREETING } from "@/lib/prompts/unni";
 import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface Conversation {
@@ -25,30 +24,30 @@ export function ConversationList({
     onBack,
 }: ConversationListProps) {
     const router = useRouter();
-    const [conversations, setConversations] = useState<Conversation[]>([]);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-    const getConversations = trpc.getConversations.useMutation();
+    // useMutation 대신 useQuery 사용
+    const getConversations = trpc.getConversations.useQuery(
+        { userId: userId || "" },
+        { enabled: !!userId }
+    );
+
+    // 로컬 state 대신 query data 사용
+    const conversations = getConversations.data || [];
+
     const createConversation = trpc.createConversation.useMutation();
     const deleteConversation = trpc.deleteConversation.useMutation();
 
-    const loadConversations = async () => {
-        const data = await getConversations.mutateAsync({ userId });
-        setConversations(data);
-    };
-
-    useEffect(() => {
-        if (userId) {
-            loadConversations();
-        }
-    }, [userId]);
-
     const handleNewConversation = async () => {
+        if (!userId) return;
+
         const conversation = await createConversation.mutateAsync({
             userId,
-            greeting: UNNI_GREETING,
         });
-        await loadConversations();
+
+        // 목록 새로고침
+        await getConversations.refetch();
+
         if (onSelectConversation) {
             onSelectConversation(conversation.id);
         } else {
@@ -64,11 +63,13 @@ export function ConversationList({
     const confirmDelete = async () => {
         if (!deleteTarget) return;
         await deleteConversation.mutateAsync({ conversationId: deleteTarget });
-        await loadConversations();
+
+        // 목록 새로고침 및 데이터 가져오기
+        const { data: updatedConversations } = await getConversations.refetch();
 
         // 현재 대화방이 삭제된 경우
         if (currentConversationId === deleteTarget) {
-            const remaining = conversations.filter(c => c.id !== deleteTarget);
+            const remaining = updatedConversations?.filter(c => c.id !== deleteTarget) || [];
             if (remaining.length > 0) {
                 if (onSelectConversation) {
                     onSelectConversation(remaining[0].id);
@@ -90,7 +91,7 @@ export function ConversationList({
         });
     };
 
-    const getPreview = (conv: Conversation) => {
+    const getPreview = (conv: any) => {
         if (conv.messages && conv.messages.length > 0) {
             const content = conv.messages[0].content;
             return content.length > 30 ? content.slice(0, 30) + "..." : content;
@@ -124,7 +125,11 @@ export function ConversationList({
 
             {/* 대화 목록 */}
             <div className="flex-1 overflow-y-auto">
-                {conversations.length === 0 ? (
+                {getConversations.isLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    </div>
+                ) : conversations.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-white/50">
                         <p className="mb-4">대화가 없어요</p>
                         <button

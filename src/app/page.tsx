@@ -3,13 +3,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
-import { UNNI_GREETING } from "@/lib/prompts/unni";
 
 export default function Home() {
   const router = useRouter();
   const getOrCreateUser = trpc.getOrCreateUser.useMutation();
-  const getConversations = trpc.getConversations.useMutation();
   const createConversation = trpc.createConversation.useMutation();
+  const utils = trpc.useUtils();
 
   useEffect(() => {
     async function init() {
@@ -20,7 +19,7 @@ export default function Home() {
       }
 
       const user = await getOrCreateUser.mutateAsync({ visitorId });
-      const conversations = await getConversations.mutateAsync({ userId: user.id });
+      const conversations = await utils.getConversations.fetch({ userId: user.id });
 
       if (conversations.length > 0) {
         // 기존 대화가 있으면 최신 대화로 이동
@@ -29,7 +28,6 @@ export default function Home() {
         // 대화가 없으면 새로 생성 후 이동
         const conversation = await createConversation.mutateAsync({
           userId: user.id,
-          greeting: UNNI_GREETING,
         });
         router.replace(`/chat/${conversation.id}`);
       }

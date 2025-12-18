@@ -52,19 +52,27 @@ export async function getPrompt(options: GetPromptOptions): Promise<string> {
     const { key, locale = 'ko', intimacyLevel = null } = options;
 
     try {
-        // DB에서 활성화된 프롬프트 조회 (raw SQL 사용)
-        const results = await prisma.$queryRaw<PromptRow[]>`
-      SELECT * FROM "Prompt" 
-      WHERE key = ${key} 
-        AND locale = ${locale} 
-        AND ("intimacyLevel" = ${intimacyLevel} OR (${intimacyLevel} IS NULL AND "intimacyLevel" IS NULL))
-        AND "isActive" = true
-      ORDER BY version DESC
-      LIMIT 1
-    `;
+        // 1. 특정 친밀도 레벨(intimacyLevel) 또는 공통(null) 프롬프트 모두 조회
+        const prompts = await prisma.prompt.findMany({
+            where: {
+                key,
+                locale,
+                isActive: true,
+                OR: [
+                    { intimacyLevel: intimacyLevel },
+                    { intimacyLevel: null }
+                ]
+            },
+            orderBy: { version: 'desc' }
+        });
 
-        if (results && results.length > 0) {
-            return results[0].content;
+        // 2. 특정 레벨이 있으면 우선 사용, 없으면 공통(null) 사용
+        const exactMatch = prompts.find(p => p.intimacyLevel === intimacyLevel);
+        const commonMatch = prompts.find(p => p.intimacyLevel === null);
+        const bestMatch = exactMatch || commonMatch;
+
+        if (bestMatch) {
+            return bestMatch.content;
         }
     } catch (error) {
         console.warn(`[PromptService] DB 조회 실패, fallback 사용: ${error}`);

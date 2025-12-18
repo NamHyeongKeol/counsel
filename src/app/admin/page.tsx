@@ -107,7 +107,7 @@ export default function AdminPage() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-white p-6">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-6xl mx-auto">
                 <header className="flex items-center justify-between mb-8">
                     <h1 className="text-2xl font-bold">🔧 프롬프트 관리</h1>
                     <button
@@ -180,9 +180,9 @@ export default function AdminPage() {
                                 <textarea
                                     value={newPrompt.content}
                                     onChange={(e) => setNewPrompt({ ...newPrompt, content: e.target.value })}
-                                    rows={8}
+                                    rows={20}
                                     placeholder="프롬프트 내용..."
-                                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm resize-none"
+                                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm resize-none font-mono"
                                 />
                             </div>
                             <button
@@ -230,8 +230,8 @@ export default function AdminPage() {
                                     <button
                                         onClick={() => handleToggleActive(prompt)}
                                         className={`px-2 py-1 rounded text-xs ${prompt.isActive
-                                                ? "bg-green-900/50 text-green-400"
-                                                : "bg-red-900/50 text-red-400"
+                                            ? "bg-green-900/50 text-green-400"
+                                            : "bg-red-900/50 text-red-400"
                                             }`}
                                     >
                                         {prompt.isActive ? "활성" : "비활성"}
@@ -251,7 +251,7 @@ export default function AdminPage() {
                                     <textarea
                                         value={editContent}
                                         onChange={(e) => setEditContent(e.target.value)}
-                                        rows={10}
+                                        rows={25}
                                         className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm resize-none font-mono"
                                     />
                                     <div className="flex gap-2">
@@ -272,7 +272,7 @@ export default function AdminPage() {
                                 </div>
                             ) : (
                                 <div>
-                                    <pre className="text-sm text-gray-300 whitespace-pre-wrap bg-gray-900/50 rounded p-3 max-h-40 overflow-y-auto">
+                                    <pre className="text-sm text-gray-300 whitespace-pre-wrap bg-gray-900/50 rounded p-3 min-h-[10rem] max-h-[40rem] overflow-y-auto font-mono">
                                         {prompt.content}
                                     </pre>
                                     <button

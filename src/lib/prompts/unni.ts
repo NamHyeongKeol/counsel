@@ -14,6 +14,6 @@ export {
     DEFAULT_GREETINGS,
 } from './defaults';
 
-// 레거시 인사말 (친밀도 1단계 기본값)
-import { DEFAULT_GREETINGS } from './defaults';
-export const UNNI_GREETING = DEFAULT_GREETINGS[1];
+// 레거시 인사말 (deprecated: DB 연동 권장)
+// import { DEFAULT_GREETINGS } from './defaults';
+// export const UNNI_GREETING = DEFAULT_GREETINGS[1];
