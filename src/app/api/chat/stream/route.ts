@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         // Gemini 스트리밍 설정
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
+            model: "gemini-3-flash-preview",
             systemInstruction: systemPrompt,
         });
 
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
                             conversationId,
                             role: "assistant",
                             content: fullResponse,
-                            model: "gemini-2.0-flash",
+                            model: "gemini-3-flash-preview",
                         },
                     });
 
