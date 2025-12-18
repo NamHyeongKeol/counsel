@@ -53,7 +53,7 @@ export function MessageBubble({
 
     // 표시용 짧은 모델명 가져오기
     const displayModelName = model && AI_MODELS[model as keyof typeof AI_MODELS]
-        ? AI_MODELS[model as keyof typeof AI_MODELS].name
+        ? AI_MODELS[model as keyof typeof AI_MODELS].shortName
         : model;
 
     const handleClick = () => {
