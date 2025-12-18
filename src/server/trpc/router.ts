@@ -24,6 +24,15 @@ export const appRouter = router({
             });
         }),
 
+    // 단일 대화방 상세 조회
+    getConversation: publicProcedure
+        .input(z.object({ conversationId: z.string() }))
+        .query(async ({ ctx, input }) => {
+            return ctx.prisma.conversation.findUnique({
+                where: { id: input.conversationId },
+            });
+        }),
+
     // 새 대화 시작 (인트로 메시지 자동 생성)
     createConversation: publicProcedure
         .input(z.object({
@@ -37,6 +46,7 @@ export const appRouter = router({
                 data: {
                     userId: input.userId,
                     title: input.title || "새 대화",
+                    model: "gemini-3-flash-preview", // 기본 모델 명시적 설정
                 },
             });
 
@@ -268,6 +278,19 @@ export const appRouter = router({
                     ...(input.isActive !== undefined && { isActive: input.isActive }),
                     version: { increment: 1 },
                 },
+            });
+        }),
+
+    // 대화방 모델 설정 업데이트
+    updateConversationModel: publicProcedure
+        .input(z.object({
+            conversationId: z.string(),
+            model: z.string(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.conversation.update({
+                where: { id: input.conversationId },
+                data: { model: input.model },
             });
         }),
 });

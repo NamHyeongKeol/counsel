@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/db";
+import { AIModelId } from "@/lib/ai/constants";
+import { streamChat } from "@/lib/ai/provider";
 import {
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_INTIMACY_MODIFIERS,
@@ -86,30 +88,20 @@ export async function POST(request: NextRequest) {
             ];
         }
 
-        // 시스템 프롬프트 조회
+        // 시스템 프롬프트 조회 (인트로 메시지 친밀도는 기본 1)
         const systemPrompt = await getSystemPromptFromDB(1);
 
-        // Gemini 스트리밍 설정
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
-        const model = genAI.getGenerativeModel({
-            model: "gemini-3-flash-preview",
-            systemInstruction: systemPrompt,
+        // 대화방 정보 조회 (모델 설정을 위해)
+        const conversation = await prisma.conversation.findUnique({
+            where: { id: conversationId },
+            select: { model: true }
         });
 
-        const chat = model.startChat({
-            history: adjustedMessages.slice(0, -1).map((m) => ({
-                role: m.role === "user" ? "user" : "model",
-                parts: [{ text: m.content }],
-            })),
-        });
-
-        const lastMessage = adjustedMessages[adjustedMessages.length - 1];
-
-        // 스트리밍 응답 생성
-        const result = await chat.sendMessageStream(lastMessage.content);
+        const modelId = (conversation?.model as AIModelId) || "gemini-1.5-flash";
 
         // 전체 응답 수집 (DB 저장용)
         let fullResponse = "";
+        let finalMetadata = { inputTokens: null as number | null, outputTokens: null as number | null };
 
         // ReadableStream 생성
         const stream = new ReadableStream({
@@ -125,44 +117,59 @@ export async function POST(request: NextRequest) {
                         createdAt: userMessage.createdAt,
                     })}\n\n`));
 
-                    // 스트리밍 청크 전송
-                    for await (const chunk of result.stream) {
-                        const text = chunk.text();
-                        fullResponse += text;
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                            type: "chunk",
-                            content: text
-                        })}\n\n`));
-                    }
-
-                    // 응답 완료 후 DB에 저장
-                    const assistantMessage = await prisma.message.create({
-                        data: {
-                            conversationId,
-                            role: "assistant",
-                            content: fullResponse,
-                            model: "gemini-3-flash-preview",
+                    // AI Provider 스트리밍 호출
+                    await streamChat(
+                        {
+                            messages: adjustedMessages,
+                            modelId,
                         },
-                    });
-
-                    // 대화 제목 업데이트 (첫 메시지인 경우)
-                    if (previousMessages.length === 1) {
-                        await prisma.conversation.update({
-                            where: { id: conversationId },
-                            data: {
-                                title: content.slice(0, 50) + (content.length > 50 ? "..." : ""),
+                        {
+                            onChunk: (text) => {
+                                fullResponse += text;
+                                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                                    type: "chunk",
+                                    content: text
+                                })}\n\n`));
                             },
-                        });
-                    }
+                            onDone: async (text, metadata) => {
+                                finalMetadata = metadata;
 
-                    // 완료 메시지 전송
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                        type: "done",
-                        assistantMessageId: assistantMessage.id,
-                        createdAt: assistantMessage.createdAt,
-                    })}\n\n`));
+                                // 응답 완료 후 DB에 저장
+                                const assistantMessage = await prisma.message.create({
+                                    data: {
+                                        conversationId,
+                                        role: "assistant",
+                                        content: text,
+                                        model: modelId,
+                                        inputTokens: metadata.inputTokens,
+                                        outputTokens: metadata.outputTokens,
+                                    },
+                                });
 
-                    controller.close();
+                                // 대화 제목 업데이트 (첫 메시지인 경우)
+                                if (previousMessages.length === 1) {
+                                    await prisma.conversation.update({
+                                        where: { id: conversationId },
+                                        data: {
+                                            title: content.slice(0, 50) + (content.length > 50 ? "..." : ""),
+                                        },
+                                    });
+                                }
+
+                                // 완료 메시지 전송
+                                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                                    type: "done",
+                                    assistantMessageId: assistantMessage.id,
+                                    createdAt: assistantMessage.createdAt,
+                                })}\n\n`));
+
+                                controller.close();
+                            },
+                            onError: (error) => {
+                                throw error;
+                            }
+                        }
+                    );
                 } catch (error) {
                     console.error("스트리밍 에러:", error);
 
@@ -173,6 +180,7 @@ export async function POST(request: NextRequest) {
                             conversationId,
                             role: "assistant",
                             content: errorMessage,
+                            model: modelId,
                         },
                     });
 

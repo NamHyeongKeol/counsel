@@ -8,25 +8,15 @@ import {
     PROMPT_KEYS
 } from "@/lib/prompts/defaults";
 
-export type AIProvider = "openai" | "anthropic" | "google" | "xai" | "deepseek";
-
-interface Message {
-    role: "user" | "assistant";
-    content: string;
-}
-
-interface ChatOptions {
-    messages: Message[];
-    provider?: AIProvider;
-    intimacyLevel?: number;
-}
-
-export interface ChatResult {
-    content: string;
-    model: string;
-    inputTokens: number | null;
-    outputTokens: number | null;
-}
+import {
+    AIProvider,
+    AI_MODELS,
+    AIModelId,
+    Message,
+    ChatOptions,
+    ChatResult,
+    StreamCallbacks
+} from "./constants";
 
 // DB에서 시스템 프롬프트 조회 (캐시 가능)
 async function getSystemPromptFromDB(intimacyLevel: number = 1): Promise<string> {
@@ -81,6 +71,15 @@ function getOpenAIClient(provider: AIProvider): OpenAI {
     }
 }
 
+function getTechnicalModelName(modelId: AIModelId): string {
+    switch (modelId) {
+        case "gemini-3-flash-preview": return "gemini-3-flash-preview";
+        case "gemini-3-pro-preview": return "gemini-3-pro-preview";
+        case "claude-opus-4-5-20251101": return "claude-opus-4-5-20251101";
+        default: return "gemini-3-flash-preview";
+    }
+}
+
 function getModelName(provider: AIProvider): string {
     switch (provider) {
         case "openai":
@@ -120,13 +119,15 @@ async function chatWithOpenAI(
     };
 }
 
-async function chatWithAnthropic(messages: Message[], systemPrompt: string): Promise<ChatResult> {
+async function chatWithAnthropic(messages: Message[], systemPrompt: string, modelId: AIModelId = "claude-opus-4-5-20251101"): Promise<ChatResult> {
     const client = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
+    const technicalModel = getTechnicalModelName(modelId);
+
     const response = await client.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: technicalModel,
         max_tokens: 1024,
         system: systemPrompt,
         messages: messages.map((m) => ({
@@ -140,16 +141,17 @@ async function chatWithAnthropic(messages: Message[], systemPrompt: string): Pro
         content: textBlock?.type === "text"
             ? textBlock.text
             : "죄송해요, 답변을 생성하는데 문제가 있었어요.",
-        model: "claude-sonnet-4-20250514",
+        model: technicalModel,
         inputTokens: response.usage?.input_tokens ?? null,
         outputTokens: response.usage?.output_tokens ?? null,
     };
 }
 
-async function chatWithGoogle(messages: Message[], systemPrompt: string): Promise<ChatResult> {
+async function chatWithGoogle(messages: Message[], systemPrompt: string, modelId: AIModelId = "gemini-3-flash-preview"): Promise<ChatResult> {
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
+    const technicalModel = getTechnicalModelName(modelId);
     const model = genAI.getGenerativeModel({
-        model: "gemini-3-flash-preview",
+        model: technicalModel,
         systemInstruction: systemPrompt,
     });
 
@@ -175,42 +177,32 @@ async function chatWithGoogle(messages: Message[], systemPrompt: string): Promis
 
     return {
         content: result.response.text(),
-        model: "gemini-3-flash-preview",
+        model: technicalModel,
         inputTokens: usageMetadata?.promptTokenCount ?? null,
         outputTokens: usageMetadata?.candidatesTokenCount ?? null,
     };
 }
 
 export async function chat(options: ChatOptions): Promise<ChatResult> {
-    const provider = options.provider ||
-        (process.env.AI_PROVIDER as AIProvider) ||
-        "google";
+    const modelId = options.modelId || "gemini-3-flash-preview";
+    const provider = AI_MODELS[modelId]?.provider || options.provider || "google";
     const intimacyLevel = options.intimacyLevel || 1;
 
     // DB에서 시스템 프롬프트 조회
     const systemPrompt = await getSystemPromptFromDB(intimacyLevel);
 
-    const modelName = provider === "anthropic"
-        ? "claude-sonnet-4-20250514"
-        : provider === "google"
-            ? "gemini-3-flash-preview"
-            : getModelName(provider);
+    const technicalModel = getTechnicalModelName(modelId);
 
     // 🔍 서버 로그: AI 요청 정보
     console.log("\n" + "=".repeat(60));
     console.log("🤖 [AI Request]");
     console.log("=".repeat(60));
     console.log(`📌 Provider: ${provider}`);
-    console.log(`📌 Model: ${modelName}`);
+    console.log(`📌 Model: ${technicalModel} (ID: ${modelId})`);
     console.log(`📌 Intimacy Level: ${intimacyLevel}`);
     console.log(`📌 Messages count: ${options.messages.length}`);
     console.log("\n📝 System Prompt (첫 200자):");
     console.log(systemPrompt.slice(0, 200) + "...\n");
-    console.log("💬 Conversation History:");
-    options.messages.forEach((m, i) => {
-        const preview = m.content.length > 100 ? m.content.slice(0, 100) + "..." : m.content;
-        console.log(`  [${i + 1}] ${m.role}: ${preview}`);
-    });
     console.log("=".repeat(60) + "\n");
 
     const startTime = Date.now();
@@ -219,10 +211,10 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
         let result: ChatResult;
         switch (provider) {
             case "anthropic":
-                result = await chatWithAnthropic(options.messages, systemPrompt);
+                result = await chatWithAnthropic(options.messages, systemPrompt, modelId);
                 break;
             case "google":
-                result = await chatWithGoogle(options.messages, systemPrompt);
+                result = await chatWithGoogle(options.messages, systemPrompt, modelId);
                 break;
             case "openai":
             case "xai":
@@ -240,8 +232,6 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
         console.log("-".repeat(60));
         console.log(`⏱️  Duration: ${duration}ms`);
         console.log(`🔢 Tokens: input=${result.inputTokens}, output=${result.outputTokens}`);
-        console.log(`📝 Response (첫 200자):`);
-        console.log(result.content.slice(0, 200) + (result.content.length > 200 ? "..." : ""));
         console.log("-".repeat(60) + "\n");
 
         return result;
@@ -249,4 +239,108 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
         console.error("\n❌ [AI Error]", error);
         throw new Error("AI 응답 생성 중 오류가 발생했습니다.");
     }
+}
+
+/**
+ * 스트리밍 대화 통합 처리 함수
+ */
+export async function streamChat(options: ChatOptions, callbacks: StreamCallbacks) {
+    const modelId = options.modelId || "gemini-3-flash-preview";
+    const provider = AI_MODELS[modelId]?.provider || "google";
+    const intimacyLevel = options.intimacyLevel || 1;
+
+    const systemPrompt = await getSystemPromptFromDB(intimacyLevel);
+
+    try {
+        if (provider === "google") {
+            await streamGoogle(options.messages, systemPrompt, modelId, callbacks);
+        } else if (provider === "anthropic") {
+            await streamAnthropic(options.messages, systemPrompt, modelId, callbacks);
+        } else {
+            // 다른 제공자는 현재 스트리밍 미구현 (필요시 추가)
+            const result = await chat(options);
+            callbacks.onChunk(result.content);
+            callbacks.onDone(result.content, { inputTokens: result.inputTokens, outputTokens: result.outputTokens });
+        }
+    } catch (error) {
+        callbacks.onError(error);
+    }
+}
+
+async function streamGoogle(messages: Message[], systemPrompt: string, modelId: AIModelId, callbacks: StreamCallbacks) {
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
+    const technicalModel = getTechnicalModelName(modelId);
+    const model = genAI.getGenerativeModel({
+        model: technicalModel,
+        systemInstruction: systemPrompt,
+    });
+
+    let adjustedMessages = [...messages];
+    if (adjustedMessages.length > 0 && adjustedMessages[0].role === "assistant") {
+        adjustedMessages = [{ role: "user" as const, content: "안녕하세요" }, ...adjustedMessages];
+    }
+
+    const chat = model.startChat({
+        history: adjustedMessages.slice(0, -1).map((m) => ({
+            role: m.role === "user" ? "user" : "model",
+            parts: [{ text: m.content }],
+        })),
+    });
+
+    const lastMessage = adjustedMessages[adjustedMessages.length - 1];
+    const result = await chat.sendMessageStream(lastMessage.content);
+
+    let fullText = "";
+    for await (const chunk of result.stream) {
+        const text = chunk.text();
+        fullText += text;
+        callbacks.onChunk(text);
+    }
+
+    const response = await result.response;
+    const usage = response.usageMetadata;
+
+    callbacks.onDone(fullText, {
+        inputTokens: usage?.promptTokenCount ?? null,
+        outputTokens: usage?.candidatesTokenCount ?? null,
+    });
+}
+
+async function streamAnthropic(messages: Message[], systemPrompt: string, modelId: AIModelId, callbacks: StreamCallbacks) {
+    const client = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
+    const technicalModel = getTechnicalModelName(modelId);
+
+    const stream = await client.messages.create({
+        model: technicalModel,
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+        })),
+        stream: true,
+    });
+
+    let fullText = "";
+    let inputTokens = null;
+    let outputTokens = null;
+
+    for await (const event of stream) {
+        if (event.type === "message_start") {
+            inputTokens = event.message.usage.input_tokens;
+        } else if (event.type === "content_block_delta") {
+            if (event.delta.type === "text_delta") {
+                const text = event.delta.text;
+                fullText += text;
+                callbacks.onChunk(text);
+            }
+        } else if (event.type === "message_delta") {
+            outputTokens = event.usage.output_tokens;
+        }
+    }
+
+    callbacks.onDone(fullText, { inputTokens, outputTokens });
 }

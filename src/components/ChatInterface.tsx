@@ -7,6 +7,7 @@ import { MessageBubble } from "@/components/MessageBubble";
 import { ConversationList } from "@/components/ConversationList";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { trpc } from "@/lib/trpc/client";
+import { AI_MODELS, type AIModelId } from "@/lib/ai/constants";
 
 interface Message {
     id: string;
@@ -36,7 +37,9 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
     const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [modal, setModal] = useState<ModalState>({ isOpen: false, message: "", onConfirm: () => { } });
+    const [isStreaming, setIsStreaming] = useState(false);
     const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState<string | null>(null);
+
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -49,7 +52,16 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
     const deleteMessage = trpc.deleteMessage.useMutation();
     const deleteSelectedMessages = trpc.deleteSelectedMessages.useMutation();
     const createGreeting = trpc.createGreeting.useMutation();
+    const updateConversationModel = trpc.updateConversationModel.useMutation();
+
+    const utils = trpc.useUtils();
+
     const getMessages = trpc.getMessages.useQuery(
+        { conversationId: conversationId || "" },
+        { enabled: !!conversationId }
+    );
+
+    const getConversation = trpc.getConversation.useQuery(
         { conversationId: conversationId || "" },
         { enabled: !!conversationId }
     );
@@ -131,7 +143,6 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
         }
     }, [messages]);
 
-    const [isStreaming, setIsStreaming] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -328,7 +339,11 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                         </div>
                         <div>
                             <h1 className="text-white font-semibold">언니야</h1>
-                            <p className="text-white/60 text-xs">연애 전문 상담사</p>
+                            <p className="text-white/60 text-xs">
+                                {getConversation.data?.model
+                                    ? AI_MODELS[getConversation.data.model as AIModelId]?.name || "AI"
+                                    : "Gemini 3 Flash"}
+                            </p>
                         </div>
                     </div>
 
@@ -357,6 +372,47 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                 >
                                     ☑ 전체 메시지 선택
                                 </button>
+
+                                {/* 모델 선택 섹션 */}
+                                <div className="px-4 py-2 border-t border-white/10">
+                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-2">
+                                        AI 모델 선택
+                                    </p>
+                                    <div className="flex flex-col gap-1">
+                                        {(Object.keys(AI_MODELS) as AIModelId[]).map((id) => {
+                                            const info = AI_MODELS[id];
+                                            return (
+                                                <button
+                                                    key={id}
+                                                    onClick={async () => {
+                                                        if (id === getConversation.data?.model) return;
+                                                        if (isStreaming) {
+                                                            alert("응답 중에는 모델을 변경할 수 없어요!");
+                                                            return;
+                                                        }
+                                                        await updateConversationModel.mutateAsync({
+                                                            conversationId,
+                                                            model: id,
+                                                        });
+                                                        await utils.getConversation.refetch();
+                                                        setMenuOpen(false);
+                                                    }}
+                                                    className={`text-left text-xs px-2 py-1.5 rounded transition-colors flex items-center justify-between ${getConversation.data?.model === id
+                                                        ? "bg-pink-600 text-white"
+                                                        : "text-white/70 hover:bg-white/10"
+                                                        }`}
+                                                >
+                                                    <span>{info.name}</span>
+                                                    {getConversation.data?.model === id && (
+                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
