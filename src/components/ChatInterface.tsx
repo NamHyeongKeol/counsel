@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MessageBubble } from "@/components/MessageBubble";
 import { ConversationList } from "@/components/ConversationList";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { trpc } from "@/lib/trpc/client";
 import { UNNI_GREETING } from "@/lib/prompts/unni";
 
@@ -17,6 +18,13 @@ interface Message {
 
 type ViewMode = "chat" | "list";
 
+interface ModalState {
+    isOpen: boolean;
+    title?: string;
+    message: string;
+    onConfirm: () => void;
+}
+
 export function ChatInterface() {
     const [input, setInput] = useState("");
     const [userId, setUserId] = useState<string | null>(null);
@@ -26,6 +34,8 @@ export function ChatInterface() {
     const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [viewMode, setViewMode] = useState<ViewMode>("chat");
+    const [modal, setModal] = useState<ModalState>({ isOpen: false, message: "", onConfirm: () => { } });
+    const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -166,10 +176,24 @@ export function ChatInterface() {
         }
     };
 
-    // 단일 메시지 삭제
-    const handleDeleteMessage = async (messageId: string) => {
-        await deleteMessage.mutateAsync({ messageId });
-        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    // 모달 닫기
+    const closeModal = () => {
+        setModal({ isOpen: false, message: "", onConfirm: () => { } });
+        setPendingDeleteMessageId(null);
+    };
+
+    // 단일 메시지 삭제 요청
+    const requestDeleteMessage = (messageId: string) => {
+        setPendingDeleteMessageId(messageId);
+        setModal({
+            isOpen: true,
+            message: "이 메시지를 삭제하시겠습니까?",
+            onConfirm: async () => {
+                await deleteMessage.mutateAsync({ messageId });
+                setMessages((prev) => prev.filter((m) => m.id !== messageId));
+                closeModal();
+            },
+        });
     };
 
     // 전체 선택 모드 진입 (모든 메시지 선택)
@@ -191,17 +215,22 @@ export function ChatInterface() {
         setSelectedIds(newSet);
     };
 
-    // 선택한 메시지 삭제
-    const handleDeleteSelected = async () => {
+    // 선택한 메시지 삭제 요청
+    const requestDeleteSelected = () => {
         if (!conversationId || selectedIds.size === 0) return;
-        if (!confirm(`선택한 ${selectedIds.size}개 메시지를 삭제하시겠습니까?`)) return;
-
-        await deleteSelectedMessages.mutateAsync({
-            messageIds: Array.from(selectedIds),
+        setModal({
+            isOpen: true,
+            message: `선택한 ${selectedIds.size}개 메시지를 삭제하시겠습니까?`,
+            onConfirm: async () => {
+                await deleteSelectedMessages.mutateAsync({
+                    messageIds: Array.from(selectedIds),
+                });
+                setMessages((prev) => prev.filter((m) => !selectedIds.has(m.id)));
+                setSelectMode(false);
+                setSelectedIds(new Set());
+                closeModal();
+            },
         });
-        setMessages((prev) => prev.filter((m) => !selectedIds.has(m.id)));
-        setSelectMode(false);
-        setSelectedIds(new Set());
     };
 
     // 새 대화 시작
@@ -308,7 +337,7 @@ export function ChatInterface() {
                             </Button>
                             <Button
                                 size="sm"
-                                onClick={handleDeleteSelected}
+                                onClick={requestDeleteSelected}
                                 disabled={selectedIds.size === 0}
                                 className="bg-red-500 text-white hover:bg-red-600"
                             >
@@ -331,7 +360,7 @@ export function ChatInterface() {
                                 selectMode={selectMode}
                                 isSelected={selectedIds.has(message.id)}
                                 onSelect={() => toggleSelect(message.id)}
-                                onDelete={() => handleDeleteMessage(message.id)}
+                                onDelete={() => requestDeleteMessage(message.id)}
                                 canDelete={!message.isLoading}
                             />
                         ))}
@@ -361,6 +390,17 @@ export function ChatInterface() {
                     </form>
                 </div>
             </div>
+
+            {/* 확인 모달 */}
+            <ConfirmModal
+                isOpen={modal.isOpen}
+                message={modal.message}
+                title={modal.title}
+                onConfirm={modal.onConfirm}
+                onCancel={closeModal}
+                confirmText="삭제"
+                danger
+            />
         </div>
     );
 }

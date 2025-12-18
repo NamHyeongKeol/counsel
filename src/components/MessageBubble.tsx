@@ -50,9 +50,7 @@ export function MessageBubble({
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (confirm("이 메시지를 삭제하시겠습니까?")) {
-            onDelete?.();
-        }
+        onDelete?.();
     };
 
     return (

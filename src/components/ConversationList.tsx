@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { UNNI_GREETING } from "@/lib/prompts/unni";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface Conversation {
     id: string;
@@ -10,7 +11,6 @@ interface Conversation {
     updatedAt: Date;
     messages?: { content: string }[];
 }
-
 
 interface ConversationListProps {
     userId: string;
@@ -26,6 +26,7 @@ export function ConversationList({
     onBack,
 }: ConversationListProps) {
     const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
     const getConversations = trpc.getConversations.useMutation();
     const createConversation = trpc.createConversation.useMutation();
@@ -51,19 +52,24 @@ export function ConversationList({
         onSelectConversation(conversation.id);
     };
 
-    const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
+    const requestDelete = (e: React.MouseEvent, conversationId: string) => {
         e.stopPropagation();
-        if (!confirm("이 대화방을 삭제하시겠습니까?")) return;
-        await deleteConversation.mutateAsync({ conversationId });
+        setDeleteTarget(conversationId);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        await deleteConversation.mutateAsync({ conversationId: deleteTarget });
         await loadConversations();
 
         // 현재 대화방이 삭제된 경우 첫 번째 대화방 선택
-        if (currentConversationId === conversationId) {
-            const remaining = conversations.filter(c => c.id !== conversationId);
+        if (currentConversationId === deleteTarget) {
+            const remaining = conversations.filter(c => c.id !== deleteTarget);
             if (remaining.length > 0) {
                 onSelectConversation(remaining[0].id);
             }
         }
+        setDeleteTarget(null);
     };
 
     const formatDate = (date: Date) => {
@@ -125,8 +131,8 @@ export function ConversationList({
                                 key={conv.id}
                                 onClick={() => onSelectConversation(conv.id)}
                                 className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors ${conv.id === currentConversationId
-                                    ? "bg-white/10"
-                                    : "hover:bg-white/5"
+                                        ? "bg-white/10"
+                                        : "hover:bg-white/5"
                                     }`}
                             >
                                 <div className="flex-1 min-w-0">
@@ -142,7 +148,7 @@ export function ConversationList({
                                         {formatDate(conv.updatedAt)}
                                     </span>
                                     <button
-                                        onClick={(e) => handleDelete(e, conv.id)}
+                                        onClick={(e) => requestDelete(e, conv.id)}
                                         className="p-1 text-white/30 hover:text-red-400"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -155,6 +161,16 @@ export function ConversationList({
                     </div>
                 )}
             </div>
+
+            {/* 삭제 확인 모달 */}
+            <ConfirmModal
+                isOpen={deleteTarget !== null}
+                message="이 대화방을 삭제하시겠습니까?"
+                onConfirm={confirmDelete}
+                onCancel={() => setDeleteTarget(null)}
+                confirmText="삭제"
+                danger
+            />
         </div>
     );
 }
