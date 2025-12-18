@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
                                         model: modelId,
                                         inputTokens: metadata.inputTokens,
                                         outputTokens: metadata.outputTokens,
-                                        cost,
+                                        cost: cost,
                                     },
                                 });
 
