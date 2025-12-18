@@ -153,7 +153,7 @@ export function ChatInterface() {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
+        <div className="app-wrapper flex flex-col h-dvh bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
             {/* 헤더 */}
             <header className="flex items-center gap-3 px-4 py-3 bg-black/20 backdrop-blur-sm border-b border-white/10">
                 <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center">

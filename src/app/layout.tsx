@@ -35,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${notoSansKR.variable} font-sans antialiased`}>
+      <body className={`${notoSansKR.variable} font-sans antialiased flex justify-center bg-gray-900`}>
         <TRPCProvider>{children}</TRPCProvider>
       </body>
     </html>
