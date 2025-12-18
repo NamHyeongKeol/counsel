@@ -111,7 +111,7 @@ async function chatWithGoogle(messages: Message[]): Promise<string> {
 export async function chat(options: ChatOptions): Promise<string> {
     const provider = options.provider ||
         (process.env.AI_PROVIDER as AIProvider) ||
-        "openai";
+        "google";
 
     const model = provider === "anthropic"
         ? "claude-sonnet-4-20250514"
