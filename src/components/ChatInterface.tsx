@@ -38,6 +38,18 @@ export function ChatInterface() {
     const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // 햄버거 메뉴 바깥 클릭 시 닫힘
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuOpen && menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [menuOpen]);
 
     const getOrCreateUser = trpc.getOrCreateUser.useMutation();
     const createConversation = trpc.createConversation.useMutation();
@@ -291,7 +303,7 @@ export function ChatInterface() {
                     </div>
 
                     {/* 햄버거 메뉴 */}
-                    <div className="relative">
+                    <div ref={menuRef} className="relative">
                         <button
                             onClick={() => setMenuOpen(!menuOpen)}
                             className="p-2 text-white/70 hover:text-white"

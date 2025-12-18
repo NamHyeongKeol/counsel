@@ -153,14 +153,23 @@ async function chatWithGoogle(messages: Message[], systemPrompt: string): Promis
         systemInstruction: systemPrompt,
     });
 
+    // Google AI는 첫 메시지가 user여야 함 - model이면 더미 user 메시지 추가
+    let adjustedMessages = [...messages];
+    if (adjustedMessages.length > 0 && adjustedMessages[0].role === "assistant") {
+        adjustedMessages = [
+            { role: "user" as const, content: "안녕하세요" },
+            ...adjustedMessages
+        ];
+    }
+
     const chat = model.startChat({
-        history: messages.slice(0, -1).map((m) => ({
+        history: adjustedMessages.slice(0, -1).map((m) => ({
             role: m.role === "user" ? "user" : "model",
             parts: [{ text: m.content }],
         })),
     });
 
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = adjustedMessages[adjustedMessages.length - 1];
     const result = await chat.sendMessage(lastMessage.content);
     const usageMetadata = result.response.usageMetadata;
 
