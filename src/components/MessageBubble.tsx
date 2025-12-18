@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { CURRENT_EXCHANGE_RATE } from "@/lib/ai/constants";
+import { AI_MODELS, CURRENT_EXCHANGE_RATE } from "@/lib/ai/constants";
 
 interface MessageBubbleProps {
     role: "user" | "assistant";
@@ -50,6 +50,11 @@ export function MessageBubble({
     canDelete
 }: MessageBubbleProps) {
     const isUser = role === "user";
+
+    // 표시용 짧은 모델명 가져오기
+    const displayModelName = model && AI_MODELS[model as keyof typeof AI_MODELS]
+        ? AI_MODELS[model as keyof typeof AI_MODELS].name
+        : model;
 
     const handleClick = () => {
         if (selectMode && onSelect) {
@@ -120,7 +125,7 @@ export function MessageBubble({
                         {/* Assistant 메시지만 모델명, 토큰, 비용 표시 */}
                         {!isUser && model && (
                             <span className="text-[10px] text-white/40 flex gap-1 items-center">
-                                <span>{model}</span>
+                                <span>{displayModelName}</span>
                                 {inputTokens != null && outputTokens != null && (
                                     <span>· {inputTokens}/{outputTokens}</span>
                                 )}
