@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { MessageBubble } from "@/components/MessageBubble";
 import { ConversationList } from "@/components/ConversationList";
@@ -16,8 +17,6 @@ interface Message {
     isLoading?: boolean;
 }
 
-type ViewMode = "chat" | "list";
-
 interface ModalState {
     isOpen: boolean;
     title?: string;
@@ -25,20 +24,35 @@ interface ModalState {
     onConfirm: () => void;
 }
 
-export function ChatInterface() {
+interface ChatInterfaceProps {
+    conversationId: string;
+    userId: string;
+}
+
+export function ChatInterface({ conversationId: initialConversationId, userId }: ChatInterfaceProps) {
     const [input, setInput] = useState("");
-    const [userId, setUserId] = useState<string | null>(null);
-    const [conversationId, setConversationId] = useState<string | null>(null);
+    const [conversationId, setConversationId] = useState<string>(initialConversationId);
     const [messages, setMessages] = useState<Message[]>([]);
     const [menuOpen, setMenuOpen] = useState(false);
     const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [viewMode, setViewMode] = useState<ViewMode>("chat");
     const [modal, setModal] = useState<ModalState>({ isOpen: false, message: "", onConfirm: () => { } });
     const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    const router = useRouter();
+
+    const createConversation = trpc.createConversation.useMutation();
+    const sendMessage = trpc.sendMessage.useMutation();
+    const deleteMessage = trpc.deleteMessage.useMutation();
+    const deleteSelectedMessages = trpc.deleteSelectedMessages.useMutation();
+    const createGreeting = trpc.createGreeting.useMutation();
+    const getMessages = trpc.getMessages.useQuery(
+        { conversationId: conversationId || "" },
+        { enabled: !!conversationId }
+    );
 
     // 햄버거 메뉴 바깥 클릭 시 닫힘 (모바일 터치 포함)
     useEffect(() => {
@@ -55,17 +69,10 @@ export function ChatInterface() {
         };
     }, [menuOpen]);
 
-    const getOrCreateUser = trpc.getOrCreateUser.useMutation();
-    const createConversation = trpc.createConversation.useMutation();
-    const sendMessage = trpc.sendMessage.useMutation();
-    const getConversations = trpc.getConversations.useMutation();
-    const deleteMessage = trpc.deleteMessage.useMutation();
-    const deleteSelectedMessages = trpc.deleteSelectedMessages.useMutation();
-    const createGreeting = trpc.createGreeting.useMutation();
-    const getMessages = trpc.getMessages.useQuery(
-        { conversationId: conversationId || "" },
-        { enabled: !!conversationId }
-    );
+    // conversationId prop이 변경되면 상태 업데이트
+    useEffect(() => {
+        setConversationId(initialConversationId);
+    }, [initialConversationId]);
 
     // textarea 자동 높이 조절
     const adjustTextareaHeight = () => {
@@ -79,35 +86,6 @@ export function ChatInterface() {
     useEffect(() => {
         adjustTextareaHeight();
     }, [input]);
-
-    // 초기화 - 유저 생성 및 대화 불러오기/시작
-    useEffect(() => {
-        async function init() {
-            let visitorId = localStorage.getItem("unni-visitor-id");
-            if (!visitorId) {
-                visitorId = crypto.randomUUID();
-                localStorage.setItem("unni-visitor-id", visitorId);
-            }
-
-            const user = await getOrCreateUser.mutateAsync({ visitorId });
-            setUserId(user.id);
-
-            const conversations = await getConversations.mutateAsync({ userId: user.id });
-
-            if (conversations.length > 0) {
-                const latestConversation = conversations[0];
-                setConversationId(latestConversation.id);
-            } else {
-                // 새 대화 시작 (인트로 메시지 포함)
-                const conversation = await createConversation.mutateAsync({
-                    userId: user.id,
-                    greeting: UNNI_GREETING,
-                });
-                setConversationId(conversation.id);
-            }
-        }
-        init();
-    }, []);
 
     // 메시지 로드 시 업데이트
     useEffect(() => {
@@ -328,30 +306,8 @@ export function ChatInterface() {
             userId,
             greeting: UNNI_GREETING,
         });
-        setConversationId(conversation.id);
+        router.push(`/chat/${conversation.id}`);
     };
-
-    // 대화방 선택
-    const handleSelectConversation = (id: string) => {
-        setConversationId(id);
-        setViewMode("chat");
-    };
-
-    // 대화방 목록 뷰
-    if (viewMode === "list" && userId) {
-        return (
-            <div className="fixed inset-0 bg-black">
-                <div className="flex flex-col h-full w-full max-w-[390px] mx-auto">
-                    <ConversationList
-                        userId={userId}
-                        currentConversationId={conversationId}
-                        onSelectConversation={handleSelectConversation}
-                        onBack={() => setViewMode("chat")}
-                    />
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="fixed inset-0 bg-black">
@@ -361,7 +317,7 @@ export function ChatInterface() {
                     <div className="flex items-center gap-3">
                         {/* 뒤로가기 (대화방 목록) */}
                         <button
-                            onClick={() => setViewMode("list")}
+                            onClick={() => router.push("/chat")}
                             className="p-1 text-white/70 hover:text-white"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

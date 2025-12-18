@@ -1,6 +1,5 @@
-"use client";
-
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { UNNI_GREETING } from "@/lib/prompts/unni";
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -14,9 +13,9 @@ interface Conversation {
 
 interface ConversationListProps {
     userId: string;
-    currentConversationId: string | null;
-    onSelectConversation: (id: string) => void;
-    onBack: () => void;
+    currentConversationId?: string | null;
+    onSelectConversation?: (id: string) => void;
+    onBack?: () => void;
 }
 
 export function ConversationList({
@@ -25,6 +24,7 @@ export function ConversationList({
     onSelectConversation,
     onBack,
 }: ConversationListProps) {
+    const router = useRouter();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
@@ -49,7 +49,11 @@ export function ConversationList({
             greeting: UNNI_GREETING,
         });
         await loadConversations();
-        onSelectConversation(conversation.id);
+        if (onSelectConversation) {
+            onSelectConversation(conversation.id);
+        } else {
+            router.push(`/chat/${conversation.id}`);
+        }
     };
 
     const requestDelete = (e: React.MouseEvent, conversationId: string) => {
@@ -62,11 +66,17 @@ export function ConversationList({
         await deleteConversation.mutateAsync({ conversationId: deleteTarget });
         await loadConversations();
 
-        // 현재 대화방이 삭제된 경우 첫 번째 대화방 선택
+        // 현재 대화방이 삭제된 경우
         if (currentConversationId === deleteTarget) {
             const remaining = conversations.filter(c => c.id !== deleteTarget);
             if (remaining.length > 0) {
-                onSelectConversation(remaining[0].id);
+                if (onSelectConversation) {
+                    onSelectConversation(remaining[0].id);
+                } else {
+                    router.push(`/chat/${remaining[0].id}`);
+                }
+            } else {
+                router.push("/chat");
             }
         }
         setDeleteTarget(null);
@@ -93,7 +103,7 @@ export function ConversationList({
             {/* 헤더 */}
             <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-md border-b border-white/10">
                 <button
-                    onClick={onBack}
+                    onClick={() => onBack ? onBack() : router.push("/")}
                     className="p-2 text-white/70 hover:text-white"
                 >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,10 +139,10 @@ export function ConversationList({
                         {conversations.map((conv) => (
                             <div
                                 key={conv.id}
-                                onClick={() => onSelectConversation(conv.id)}
+                                onClick={() => onSelectConversation ? onSelectConversation(conv.id) : router.push(`/chat/${conv.id}`)}
                                 className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors ${conv.id === currentConversationId
-                                        ? "bg-white/10"
-                                        : "hover:bg-white/5"
+                                    ? "bg-white/10"
+                                    : "hover:bg-white/5"
                                     }`}
                             >
                                 <div className="flex-1 min-w-0">
