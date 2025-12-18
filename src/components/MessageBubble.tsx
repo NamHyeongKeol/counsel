@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { CURRENT_EXCHANGE_RATE } from "@/lib/ai/constants";
 
 interface MessageBubbleProps {
     role: "user" | "assistant";
@@ -124,7 +125,12 @@ export function MessageBubble({
                                     <span>· {inputTokens}/{outputTokens}</span>
                                 )}
                                 {cost != null && (
-                                    <span className="text-pink-400/60 font-medium">· ${cost.toFixed(4)}</span>
+                                    <span className="text-pink-400/60 font-medium">
+                                        · ${cost.toFixed(4)}
+                                        <span className="ml-1 text-[9px] opacity-70">
+                                            (약 {Math.round(cost * CURRENT_EXCHANGE_RATE)}원)
+                                        </span>
+                                    </span>
                                 )}
                             </span>
                         )}
