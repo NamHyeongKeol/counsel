@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MessageBubble } from "@/components/MessageBubble";
+import { ConversationList } from "@/components/ConversationList";
 import { trpc } from "@/lib/trpc/client";
 import { UNNI_GREETING } from "@/lib/prompts/unni";
 
@@ -14,6 +15,8 @@ interface Message {
     isLoading?: boolean;
 }
 
+type ViewMode = "chat" | "list";
+
 export function ChatInterface() {
     const [input, setInput] = useState("");
     const [userId, setUserId] = useState<string | null>(null);
@@ -22,6 +25,7 @@ export function ChatInterface() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [viewMode, setViewMode] = useState<ViewMode>("chat");
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -67,23 +71,13 @@ export function ChatInterface() {
             if (conversations.length > 0) {
                 const latestConversation = conversations[0];
                 setConversationId(latestConversation.id);
-                // 메시지는 getMessages에서 로드됨
             } else {
-                // 새 대화 시작
-                const conversation = await createConversation.mutateAsync({ userId: user.id });
-                setConversationId(conversation.id);
-
-                // 인트로 메시지 DB에 저장
-                const greeting = await createGreeting.mutateAsync({
-                    conversationId: conversation.id,
-                    content: UNNI_GREETING,
+                // 새 대화 시작 (인트로 메시지 포함)
+                const conversation = await createConversation.mutateAsync({
+                    userId: user.id,
+                    greeting: UNNI_GREETING,
                 });
-                setMessages([{
-                    id: greeting.id,
-                    role: "assistant",
-                    content: greeting.content,
-                    createdAt: greeting.createdAt,
-                }]);
+                setConversationId(conversation.id);
             }
         }
         init();
@@ -117,6 +111,14 @@ export function ChatInterface() {
             }
         }
     }, [getMessages.data, conversationId]);
+
+    // conversationId 변경 시 메시지 초기화 및 리로드
+    useEffect(() => {
+        if (conversationId) {
+            setMessages([]);
+            getMessages.refetch();
+        }
+    }, [conversationId]);
 
     // 자동 스크롤
     useEffect(() => {
@@ -202,12 +204,54 @@ export function ChatInterface() {
         setSelectedIds(new Set());
     };
 
+    // 새 대화 시작
+    const handleNewConversation = async () => {
+        if (!userId) return;
+        setMenuOpen(false);
+        const conversation = await createConversation.mutateAsync({
+            userId,
+            greeting: UNNI_GREETING,
+        });
+        setConversationId(conversation.id);
+    };
+
+    // 대화방 선택
+    const handleSelectConversation = (id: string) => {
+        setConversationId(id);
+        setViewMode("chat");
+    };
+
+    // 대화방 목록 뷰
+    if (viewMode === "list" && userId) {
+        return (
+            <div className="fixed inset-0 bg-black">
+                <div className="flex flex-col h-full w-full max-w-[390px] mx-auto">
+                    <ConversationList
+                        userId={userId}
+                        currentConversationId={conversationId}
+                        onSelectConversation={handleSelectConversation}
+                        onBack={() => setViewMode("chat")}
+                    />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="fixed inset-0 bg-black">
             <div className="flex flex-col h-full w-full max-w-[390px] mx-auto bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
                 {/* 헤더 */}
                 <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-md border-b border-white/10">
                     <div className="flex items-center gap-3">
+                        {/* 뒤로가기 (대화방 목록) */}
+                        <button
+                            onClick={() => setViewMode("list")}
+                            className="p-1 text-white/70 hover:text-white"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
                         <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0">
                             <span className="text-white text-sm font-bold">언니</span>
                         </div>
@@ -231,8 +275,14 @@ export function ChatInterface() {
                         {menuOpen && (
                             <div className="absolute right-0 top-12 w-48 bg-gray-900 rounded-lg shadow-xl border border-white/10 overflow-hidden z-20">
                                 <button
-                                    onClick={enterSelectAllMode}
+                                    onClick={handleNewConversation}
                                     className="w-full px-4 py-3 text-left text-white/90 hover:bg-white/10 text-sm"
+                                >
+                                    ✨ 새 대화 시작
+                                </button>
+                                <button
+                                    onClick={enterSelectAllMode}
+                                    className="w-full px-4 py-3 text-left text-white/90 hover:bg-white/10 text-sm border-t border-white/10"
                                 >
                                     ☑ 전체 메시지 선택
                                 </button>
@@ -289,7 +339,7 @@ export function ChatInterface() {
                 </div>
 
                 {/* 입력 영역 */}
-                <div className="sticky bottom-0 z-10 p-4 bg-black/30 backdrop-blur-md border-t border-white/10">
+                <div className="sticky bottom-0 z-10 p-2 bg-black/30 backdrop-blur-md border-t border-white/10">
                     <form onSubmit={handleSubmit} className="flex gap-2 items-end">
                         <textarea
                             ref={textareaRef}
@@ -309,9 +359,6 @@ export function ChatInterface() {
                             {sendMessage.isPending ? "..." : "전송"}
                         </Button>
                     </form>
-                    <p className="text-center text-white/40 text-[0.625rem] mt-2">
-                        AI 상담은 참고용이며, 전문 상담이 필요하면 전문가를 찾아주세요.
-                    </p>
                 </div>
             </div>
         </div>
