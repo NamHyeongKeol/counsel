@@ -118,31 +118,34 @@ export const appRouter = router({
             });
         }),
 
-    // 대화 전체 메시지 삭제
-    deleteAllMessages: publicProcedure
-        .input(z.object({ conversationId: z.string() }))
+    // 선택한 메시지들 삭제
+    deleteSelectedMessages: publicProcedure
+        .input(z.object({
+            messageIds: z.array(z.string()),
+        }))
         .mutation(async ({ ctx, input }) => {
             return ctx.prisma.message.updateMany({
-                where: { conversationId: input.conversationId },
+                where: { id: { in: input.messageIds } },
                 data: { isDeleted: true },
             });
         }),
 
-    // 선택한 메시지 제외하고 삭제
-    deleteMessagesExcept: publicProcedure
+    // 인트로(인사) 메시지 생성
+    createGreeting: publicProcedure
         .input(z.object({
             conversationId: z.string(),
-            keepMessageIds: z.array(z.string()),
+            content: z.string(),
         }))
         .mutation(async ({ ctx, input }) => {
-            return ctx.prisma.message.updateMany({
-                where: {
+            return ctx.prisma.message.create({
+                data: {
                     conversationId: input.conversationId,
-                    id: { notIn: input.keepMessageIds },
+                    role: "assistant",
+                    content: input.content,
                 },
-                data: { isDeleted: true },
             });
         }),
+
 
     // 임시 유저 생성 또는 조회
     getOrCreateUser: publicProcedure

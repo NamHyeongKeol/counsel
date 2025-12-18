@@ -30,8 +30,8 @@ export function ChatInterface() {
     const sendMessage = trpc.sendMessage.useMutation();
     const getConversations = trpc.getConversations.useMutation();
     const deleteMessage = trpc.deleteMessage.useMutation();
-    const deleteAllMessages = trpc.deleteAllMessages.useMutation();
-    const deleteMessagesExcept = trpc.deleteMessagesExcept.useMutation();
+    const deleteSelectedMessages = trpc.deleteSelectedMessages.useMutation();
+    const createGreeting = trpc.createGreeting.useMutation();
     const getMessages = trpc.getMessages.useQuery(
         { conversationId: conversationId || "" },
         { enabled: !!conversationId }
@@ -67,15 +67,23 @@ export function ChatInterface() {
             if (conversations.length > 0) {
                 const latestConversation = conversations[0];
                 setConversationId(latestConversation.id);
-                setMessages([
-                    { id: "greeting", role: "assistant", content: UNNI_GREETING, createdAt: new Date() },
-                ]);
+                // 메시지는 getMessages에서 로드됨
             } else {
+                // 새 대화 시작
                 const conversation = await createConversation.mutateAsync({ userId: user.id });
                 setConversationId(conversation.id);
-                setMessages([
-                    { id: "greeting", role: "assistant", content: UNNI_GREETING, createdAt: new Date() },
-                ]);
+
+                // 인트로 메시지 DB에 저장
+                const greeting = await createGreeting.mutateAsync({
+                    conversationId: conversation.id,
+                    content: UNNI_GREETING,
+                });
+                setMessages([{
+                    id: greeting.id,
+                    role: "assistant",
+                    content: greeting.content,
+                    createdAt: greeting.createdAt,
+                }]);
             }
         }
         init();
@@ -83,18 +91,32 @@ export function ChatInterface() {
 
     // 메시지 로드 시 업데이트
     useEffect(() => {
-        if (getMessages.data && getMessages.data.length > 0) {
-            setMessages([
-                { id: "greeting", role: "assistant", content: UNNI_GREETING, createdAt: new Date() },
-                ...getMessages.data.map((m) => ({
-                    id: m.id,
-                    role: m.role as "user" | "assistant",
-                    content: m.content,
-                    createdAt: m.createdAt,
-                })),
-            ]);
+        if (getMessages.data) {
+            if (getMessages.data.length > 0) {
+                setMessages(
+                    getMessages.data.map((m) => ({
+                        id: m.id,
+                        role: m.role as "user" | "assistant",
+                        content: m.content,
+                        createdAt: m.createdAt,
+                    }))
+                );
+            } else if (conversationId) {
+                // 메시지가 없으면 인트로 메시지 생성
+                createGreeting.mutateAsync({
+                    conversationId,
+                    content: UNNI_GREETING,
+                }).then((greeting) => {
+                    setMessages([{
+                        id: greeting.id,
+                        role: "assistant",
+                        content: greeting.content,
+                        createdAt: greeting.createdAt,
+                    }]);
+                });
+            }
         }
-    }, [getMessages.data]);
+    }, [getMessages.data, conversationId]);
 
     // 자동 스크롤
     useEffect(() => {
@@ -144,30 +166,20 @@ export function ChatInterface() {
 
     // 단일 메시지 삭제
     const handleDeleteMessage = async (messageId: string) => {
-        if (messageId === "greeting") return;
         await deleteMessage.mutateAsync({ messageId });
         setMessages((prev) => prev.filter((m) => m.id !== messageId));
     };
 
-    // 전체 삭제
-    const handleDeleteAll = async () => {
-        if (!conversationId) return;
-        if (!confirm("모든 메시지를 삭제하시겠습니까?")) return;
-        await deleteAllMessages.mutateAsync({ conversationId });
-        setMessages([{ id: "greeting", role: "assistant", content: UNNI_GREETING, createdAt: new Date() }]);
-        setMenuOpen(false);
-    };
-
-    // 선택 모드 토글
-    const toggleSelectMode = () => {
-        setSelectMode(!selectMode);
-        setSelectedIds(new Set());
+    // 전체 선택 모드 진입 (모든 메시지 선택)
+    const enterSelectAllMode = () => {
+        const allIds = new Set(messages.filter(m => !m.isLoading).map(m => m.id));
+        setSelectedIds(allIds);
+        setSelectMode(true);
         setMenuOpen(false);
     };
 
     // 메시지 선택 토글
     const toggleSelect = (id: string) => {
-        if (id === "greeting") return;
         const newSet = new Set(selectedIds);
         if (newSet.has(id)) {
             newSet.delete(id);
@@ -177,12 +189,15 @@ export function ChatInterface() {
         setSelectedIds(newSet);
     };
 
-    // 선택한 것 제외하고 삭제
-    const handleDeleteExceptSelected = async () => {
+    // 선택한 메시지 삭제
+    const handleDeleteSelected = async () => {
         if (!conversationId || selectedIds.size === 0) return;
-        if (!confirm(`선택한 ${selectedIds.size}개 메시지를 제외하고 모두 삭제하시겠습니까?`)) return;
-        await deleteMessagesExcept.mutateAsync({ conversationId, keepMessageIds: Array.from(selectedIds) });
-        setMessages((prev) => prev.filter((m) => m.id === "greeting" || selectedIds.has(m.id)));
+        if (!confirm(`선택한 ${selectedIds.size}개 메시지를 삭제하시겠습니까?`)) return;
+
+        await deleteSelectedMessages.mutateAsync({
+            messageIds: Array.from(selectedIds),
+        });
+        setMessages((prev) => prev.filter((m) => !selectedIds.has(m.id)));
         setSelectMode(false);
         setSelectedIds(new Set());
     };
@@ -216,16 +231,10 @@ export function ChatInterface() {
                         {menuOpen && (
                             <div className="absolute right-0 top-12 w-48 bg-gray-900 rounded-lg shadow-xl border border-white/10 overflow-hidden z-20">
                                 <button
-                                    onClick={toggleSelectMode}
+                                    onClick={enterSelectAllMode}
                                     className="w-full px-4 py-3 text-left text-white/90 hover:bg-white/10 text-sm"
                                 >
-                                    {selectMode ? "✕ 선택 모드 취소" : "☐ 메시지 선택하기"}
-                                </button>
-                                <button
-                                    onClick={handleDeleteAll}
-                                    className="w-full px-4 py-3 text-left text-red-400 hover:bg-white/10 text-sm border-t border-white/10"
-                                >
-                                    🗑 전체 삭제
+                                    ☑ 전체 메시지 선택
                                 </button>
                             </div>
                         )}
@@ -249,11 +258,11 @@ export function ChatInterface() {
                             </Button>
                             <Button
                                 size="sm"
-                                onClick={handleDeleteExceptSelected}
+                                onClick={handleDeleteSelected}
                                 disabled={selectedIds.size === 0}
-                                className="bg-white text-pink-600 hover:bg-white/90"
+                                className="bg-red-500 text-white hover:bg-red-600"
                             >
-                                선택 제외 삭제
+                                선택 삭제
                             </Button>
                         </div>
                     </div>
@@ -273,7 +282,7 @@ export function ChatInterface() {
                                 isSelected={selectedIds.has(message.id)}
                                 onSelect={() => toggleSelect(message.id)}
                                 onDelete={() => handleDeleteMessage(message.id)}
-                                canDelete={message.id !== "greeting" && !message.isLoading}
+                                canDelete={!message.isLoading}
                             />
                         ))}
                     </div>
@@ -308,5 +317,3 @@ export function ChatInterface() {
         </div>
     );
 }
-
-
