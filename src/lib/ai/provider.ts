@@ -1,7 +1,12 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { UNNI_SYSTEM_PROMPT } from "@/lib/prompts/unni";
+import { prisma } from "@/lib/db";
+import {
+    DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_INTIMACY_MODIFIERS,
+    PROMPT_KEYS
+} from "@/lib/prompts/defaults";
 
 export type AIProvider = "openai" | "anthropic" | "google" | "xai" | "deepseek";
 
@@ -13,6 +18,7 @@ interface Message {
 interface ChatOptions {
     messages: Message[];
     provider?: AIProvider;
+    intimacyLevel?: number;
 }
 
 export interface ChatResult {
@@ -20,6 +26,39 @@ export interface ChatResult {
     model: string;
     inputTokens: number | null;
     outputTokens: number | null;
+}
+
+// DB에서 시스템 프롬프트 조회 (캐시 가능)
+async function getSystemPromptFromDB(intimacyLevel: number = 1): Promise<string> {
+    try {
+        // 1. 시스템 프롬프트 (공통)
+        const systemPrompt = await prisma.prompt.findFirst({
+            where: {
+                key: PROMPT_KEYS.SYSTEM,
+                isActive: true,
+                intimacyLevel: null,
+                locale: "ko",
+            },
+        });
+
+        // 2. 친밀도 modifier
+        const intimacyModifier = await prisma.prompt.findFirst({
+            where: {
+                key: PROMPT_KEYS.INTIMACY_MODIFIER,
+                isActive: true,
+                intimacyLevel,
+                locale: "ko",
+            },
+        });
+
+        const basePrompt = systemPrompt?.content || DEFAULT_SYSTEM_PROMPT;
+        const modifier = intimacyModifier?.content || DEFAULT_INTIMACY_MODIFIERS[intimacyLevel] || "";
+
+        return `${basePrompt}\n\n${modifier}`;
+    } catch (error) {
+        console.error("DB 프롬프트 조회 실패, 기본값 사용:", error);
+        return `${DEFAULT_SYSTEM_PROMPT}\n\n${DEFAULT_INTIMACY_MODIFIERS[intimacyLevel] || ""}`;
+    }
 }
 
 // OpenAI Client (also used for Grok/xAI and Deepseek)
@@ -57,7 +96,8 @@ function getModelName(provider: AIProvider): string {
 
 async function chatWithOpenAI(
     messages: Message[],
-    provider: AIProvider
+    provider: AIProvider,
+    systemPrompt: string
 ): Promise<ChatResult> {
     const client = getOpenAIClient(provider);
     const model = getModelName(provider);
@@ -65,7 +105,7 @@ async function chatWithOpenAI(
     const response = await client.chat.completions.create({
         model,
         messages: [
-            { role: "system", content: UNNI_SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             ...messages.map((m) => ({ role: m.role, content: m.content })),
         ],
         max_tokens: 1024,
@@ -80,7 +120,7 @@ async function chatWithOpenAI(
     };
 }
 
-async function chatWithAnthropic(messages: Message[]): Promise<ChatResult> {
+async function chatWithAnthropic(messages: Message[], systemPrompt: string): Promise<ChatResult> {
     const client = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -88,7 +128,7 @@ async function chatWithAnthropic(messages: Message[]): Promise<ChatResult> {
     const response = await client.messages.create({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
-        system: UNNI_SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: messages.map((m) => ({
             role: m.role,
             content: m.content,
@@ -106,11 +146,11 @@ async function chatWithAnthropic(messages: Message[]): Promise<ChatResult> {
     };
 }
 
-async function chatWithGoogle(messages: Message[]): Promise<ChatResult> {
+async function chatWithGoogle(messages: Message[], systemPrompt: string): Promise<ChatResult> {
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
     const model = genAI.getGenerativeModel({
         model: "gemini-3-flash-preview",
-        systemInstruction: UNNI_SYSTEM_PROMPT,
+        systemInstruction: systemPrompt,
     });
 
     const chat = model.startChat({
@@ -136,8 +176,12 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
     const provider = options.provider ||
         (process.env.AI_PROVIDER as AIProvider) ||
         "google";
+    const intimacyLevel = options.intimacyLevel || 1;
 
-    const model = provider === "anthropic"
+    // DB에서 시스템 프롬프트 조회
+    const systemPrompt = await getSystemPromptFromDB(intimacyLevel);
+
+    const modelName = provider === "anthropic"
         ? "claude-sonnet-4-20250514"
         : provider === "google"
             ? "gemini-3-flash-preview"
@@ -148,10 +192,11 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
     console.log("🤖 [AI Request]");
     console.log("=".repeat(60));
     console.log(`📌 Provider: ${provider}`);
-    console.log(`📌 Model: ${model}`);
+    console.log(`📌 Model: ${modelName}`);
+    console.log(`📌 Intimacy Level: ${intimacyLevel}`);
     console.log(`📌 Messages count: ${options.messages.length}`);
     console.log("\n📝 System Prompt (첫 200자):");
-    console.log(UNNI_SYSTEM_PROMPT.slice(0, 200) + "...\n");
+    console.log(systemPrompt.slice(0, 200) + "...\n");
     console.log("💬 Conversation History:");
     options.messages.forEach((m, i) => {
         const preview = m.content.length > 100 ? m.content.slice(0, 100) + "..." : m.content;
@@ -165,18 +210,18 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
         let result: ChatResult;
         switch (provider) {
             case "anthropic":
-                result = await chatWithAnthropic(options.messages);
+                result = await chatWithAnthropic(options.messages, systemPrompt);
                 break;
             case "google":
-                result = await chatWithGoogle(options.messages);
+                result = await chatWithGoogle(options.messages, systemPrompt);
                 break;
             case "openai":
             case "xai":
             case "deepseek":
-                result = await chatWithOpenAI(options.messages, provider);
+                result = await chatWithOpenAI(options.messages, provider, systemPrompt);
                 break;
             default:
-                result = await chatWithOpenAI(options.messages, "openai");
+                result = await chatWithOpenAI(options.messages, "openai", systemPrompt);
         }
 
         // 🔍 서버 로그: AI 응답 정보
@@ -196,4 +241,3 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
         throw new Error("AI 응답 생성 중 오류가 발생했습니다.");
     }
 }
-
