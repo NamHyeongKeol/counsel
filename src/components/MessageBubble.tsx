@@ -109,10 +109,7 @@ export function MessageBubble({
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
                 )}
                 {createdAt && !isLoading && (
-                    <div className={cn(
-                        "flex items-center gap-2 mt-1",
-                        isUser ? "justify-end" : "justify-start"
-                    )}>
+                    <div className="flex items-center justify-end gap-2 mt-1">
                         <span className={cn(
                             "text-[10px]",
                             isUser ? "text-white/70" : "text-white/50"
@@ -122,22 +119,21 @@ export function MessageBubble({
                                 minute: "2-digit",
                             })}
                         </span>
+                        {!selectMode && canDelete && (
+                            <button
+                                onClick={handleDelete}
+                                className={cn(
+                                    "text-[10px] hover:text-red-400 transition-colors",
+                                    isUser ? "text-white/50" : "text-white/40"
+                                )}
+                                title="삭제"
+                            >
+                                삭제
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
-
-            {/* 삭제 버튼 (버블 바깥, 시간 옆) */}
-            {!selectMode && canDelete && !isLoading && (
-                <button
-                    onClick={handleDelete}
-                    className="self-end mb-1 shrink-0 text-white/30 hover:text-red-400 transition-colors"
-                    title="삭제"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                </button>
-            )}
         </div>
     );
 }
