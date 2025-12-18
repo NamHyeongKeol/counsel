@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
             select: { model: true }
         });
 
-        const modelId = (conversation?.model as AIModelId) || "gemini-1.5-flash";
+        const modelId = (conversation?.model as AIModelId) || "gemini-3-flash-preview";
 
         // 전체 응답 수집 (DB 저장용)
         let fullResponse = "";
