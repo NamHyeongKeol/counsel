@@ -15,6 +15,12 @@ interface ChatOptions {
     provider?: AIProvider;
 }
 
+export interface ChatResult {
+    content: string;
+    inputTokens: number | null;
+    outputTokens: number | null;
+}
+
 // OpenAI Client (also used for Grok/xAI and Deepseek)
 function getOpenAIClient(provider: AIProvider): OpenAI {
     switch (provider) {
@@ -51,7 +57,7 @@ function getModelName(provider: AIProvider): string {
 async function chatWithOpenAI(
     messages: Message[],
     provider: AIProvider
-): Promise<string> {
+): Promise<ChatResult> {
     const client = getOpenAIClient(provider);
     const model = getModelName(provider);
 
@@ -65,10 +71,14 @@ async function chatWithOpenAI(
         temperature: 0.8,
     });
 
-    return response.choices[0]?.message?.content || "죄송해요, 답변을 생성하는데 문제가 있었어요.";
+    return {
+        content: response.choices[0]?.message?.content || "죄송해요, 답변을 생성하는데 문제가 있었어요.",
+        inputTokens: response.usage?.prompt_tokens ?? null,
+        outputTokens: response.usage?.completion_tokens ?? null,
+    };
 }
 
-async function chatWithAnthropic(messages: Message[]): Promise<string> {
+async function chatWithAnthropic(messages: Message[]): Promise<ChatResult> {
     const client = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -84,15 +94,19 @@ async function chatWithAnthropic(messages: Message[]): Promise<string> {
     });
 
     const textBlock = response.content.find((block) => block.type === "text");
-    return textBlock?.type === "text"
-        ? textBlock.text
-        : "죄송해요, 답변을 생성하는데 문제가 있었어요.";
+    return {
+        content: textBlock?.type === "text"
+            ? textBlock.text
+            : "죄송해요, 답변을 생성하는데 문제가 있었어요.",
+        inputTokens: response.usage?.input_tokens ?? null,
+        outputTokens: response.usage?.output_tokens ?? null,
+    };
 }
 
-async function chatWithGoogle(messages: Message[]): Promise<string> {
+async function chatWithGoogle(messages: Message[]): Promise<ChatResult> {
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
     const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-3-flash-preview",
         systemInstruction: UNNI_SYSTEM_PROMPT,
     });
 
@@ -105,10 +119,16 @@ async function chatWithGoogle(messages: Message[]): Promise<string> {
 
     const lastMessage = messages[messages.length - 1];
     const result = await chat.sendMessage(lastMessage.content);
-    return result.response.text();
+    const usageMetadata = result.response.usageMetadata;
+    
+    return {
+        content: result.response.text(),
+        inputTokens: usageMetadata?.promptTokenCount ?? null,
+        outputTokens: usageMetadata?.candidatesTokenCount ?? null,
+    };
 }
 
-export async function chat(options: ChatOptions): Promise<string> {
+export async function chat(options: ChatOptions): Promise<ChatResult> {
     const provider = options.provider ||
         (process.env.AI_PROVIDER as AIProvider) ||
         "google";
@@ -116,7 +136,7 @@ export async function chat(options: ChatOptions): Promise<string> {
     const model = provider === "anthropic"
         ? "claude-sonnet-4-20250514"
         : provider === "google"
-            ? "gemini-2.0-flash"
+            ? "gemini-3-flash-preview"
             : getModelName(provider);
 
     // 🔍 서버 로그: AI 요청 정보
@@ -138,21 +158,21 @@ export async function chat(options: ChatOptions): Promise<string> {
     const startTime = Date.now();
 
     try {
-        let response: string;
+        let result: ChatResult;
         switch (provider) {
             case "anthropic":
-                response = await chatWithAnthropic(options.messages);
+                result = await chatWithAnthropic(options.messages);
                 break;
             case "google":
-                response = await chatWithGoogle(options.messages);
+                result = await chatWithGoogle(options.messages);
                 break;
             case "openai":
             case "xai":
             case "deepseek":
-                response = await chatWithOpenAI(options.messages, provider);
+                result = await chatWithOpenAI(options.messages, provider);
                 break;
             default:
-                response = await chatWithOpenAI(options.messages, "openai");
+                result = await chatWithOpenAI(options.messages, "openai");
         }
 
         // 🔍 서버 로그: AI 응답 정보
@@ -161,13 +181,15 @@ export async function chat(options: ChatOptions): Promise<string> {
         console.log("✅ [AI Response]");
         console.log("-".repeat(60));
         console.log(`⏱️  Duration: ${duration}ms`);
+        console.log(`🔢 Tokens: input=${result.inputTokens}, output=${result.outputTokens}`);
         console.log(`📝 Response (첫 200자):`);
-        console.log(response.slice(0, 200) + (response.length > 200 ? "..." : ""));
+        console.log(result.content.slice(0, 200) + (result.content.length > 200 ? "..." : ""));
         console.log("-".repeat(60) + "\n");
 
-        return response;
+        return result;
     } catch (error) {
         console.error("\n❌ [AI Error]", error);
         throw new Error("AI 응답 생성 중 오류가 발생했습니다.");
     }
 }
+

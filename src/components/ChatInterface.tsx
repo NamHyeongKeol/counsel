@@ -25,12 +25,13 @@ export function ChatInterface() {
     const getOrCreateUser = trpc.getOrCreateUser.useMutation();
     const createConversation = trpc.createConversation.useMutation();
     const sendMessage = trpc.sendMessage.useMutation();
+    const getConversations = trpc.getConversations.useMutation();
     const getMessages = trpc.getMessages.useQuery(
         { conversationId: conversationId || "" },
         { enabled: !!conversationId }
     );
 
-    // 초기화 - 유저 생성 및 대화 시작
+    // 초기화 - 유저 생성 및 대화 불러오기/시작
     useEffect(() => {
         async function init() {
             // 로컬스토리지에서 visitorId 가져오기 또는 생성
@@ -43,21 +44,40 @@ export function ChatInterface() {
             const user = await getOrCreateUser.mutateAsync({ visitorId });
             setUserId(user.id);
 
-            // 새 대화 시작
-            const conversation = await createConversation.mutateAsync({
-                userId: user.id,
-            });
-            setConversationId(conversation.id);
+            // 기존 대화 조회
+            const conversations = await getConversations.mutateAsync({ userId: user.id });
 
-            // 인사 메시지 추가
-            setMessages([
-                {
-                    id: "greeting",
-                    role: "assistant",
-                    content: UNNI_GREETING,
-                    createdAt: new Date(),
-                },
-            ]);
+            if (conversations.length > 0) {
+                // 가장 최근 대화 불러오기
+                const latestConversation = conversations[0];
+                setConversationId(latestConversation.id);
+
+                // 인사 메시지 추가 (대화 기록은 useEffect에서 로드됨)
+                setMessages([
+                    {
+                        id: "greeting",
+                        role: "assistant",
+                        content: UNNI_GREETING,
+                        createdAt: new Date(),
+                    },
+                ]);
+            } else {
+                // 새 대화 시작
+                const conversation = await createConversation.mutateAsync({
+                    userId: user.id,
+                });
+                setConversationId(conversation.id);
+
+                // 인사 메시지 추가
+                setMessages([
+                    {
+                        id: "greeting",
+                        role: "assistant",
+                        content: UNNI_GREETING,
+                        createdAt: new Date(),
+                    },
+                ]);
+            }
         }
 
         init();

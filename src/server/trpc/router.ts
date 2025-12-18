@@ -6,7 +6,7 @@ export const appRouter = router({
     // 대화 목록 조회
     getConversations: publicProcedure
         .input(z.object({ userId: z.string() }))
-        .query(async ({ ctx, input }) => {
+        .mutation(async ({ ctx, input }) => {
             return ctx.prisma.conversation.findMany({
                 where: { userId: input.userId },
                 orderBy: { updatedAt: "desc" },
@@ -66,19 +66,21 @@ export const appRouter = router({
             });
 
             // AI 응답 생성
-            const aiResponse = await chat({
+            const aiResult = await chat({
                 messages: previousMessages.map((m) => ({
                     role: m.role as "user" | "assistant",
                     content: m.content,
                 })),
             });
 
-            // AI 응답 저장
+            // AI 응답 저장 (토큰 정보 포함)
             const assistantMessage = await ctx.prisma.message.create({
                 data: {
                     conversationId: input.conversationId,
                     role: "assistant",
-                    content: aiResponse,
+                    content: aiResult.content,
+                    inputTokens: aiResult.inputTokens,
+                    outputTokens: aiResult.outputTokens,
                 },
             });
 
