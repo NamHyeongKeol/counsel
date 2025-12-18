@@ -165,7 +165,63 @@ export const appRouter = router({
 
             return user;
         }),
+
+    // ============================================
+    // 프롬프트 관리 API (Admin)
+    // ============================================
+
+    // 모든 프롬프트 조회
+    getPrompts: publicProcedure
+        .query(async ({ ctx }) => {
+            return ctx.prisma.prompt.findMany({
+                orderBy: [
+                    { key: "asc" },
+                    { intimacyLevel: "asc" },
+                    { locale: "asc" },
+                ],
+            });
+        }),
+
+    // 프롬프트 생성
+    createPrompt: publicProcedure
+        .input(z.object({
+            key: z.string(),
+            content: z.string(),
+            locale: z.string().default("ko"),
+            intimacyLevel: z.number().nullable().optional(),
+            description: z.string().nullable().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.prompt.create({
+                data: {
+                    key: input.key,
+                    content: input.content,
+                    locale: input.locale,
+                    intimacyLevel: input.intimacyLevel,
+                    description: input.description,
+                },
+            });
+        }),
+
+    // 프롬프트 수정
+    updatePrompt: publicProcedure
+        .input(z.object({
+            id: z.string(),
+            content: z.string().optional(),
+            description: z.string().nullable().optional(),
+            isActive: z.boolean().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.prompt.update({
+                where: { id: input.id },
+                data: {
+                    ...(input.content !== undefined && { content: input.content }),
+                    ...(input.description !== undefined && { description: input.description }),
+                    ...(input.isActive !== undefined && { isActive: input.isActive }),
+                    version: { increment: 1 },
+                },
+            });
+        }),
 });
 
 export type AppRouter = typeof appRouter;
-
