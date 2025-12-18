@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/db";
-import { AIModelId } from "@/lib/ai/constants";
+import { AIModelId, calculateCost } from "@/lib/ai/constants";
 import { streamChat } from "@/lib/ai/provider";
 import {
     DEFAULT_SYSTEM_PROMPT,
@@ -134,6 +134,9 @@ export async function POST(request: NextRequest) {
                             onDone: async (text, metadata) => {
                                 finalMetadata = metadata;
 
+                                // 비용 계산
+                                const cost = calculateCost(modelId, metadata.inputTokens, metadata.outputTokens);
+
                                 // 응답 완료 후 DB에 저장
                                 const assistantMessage = await prisma.message.create({
                                     data: {
@@ -143,6 +146,7 @@ export async function POST(request: NextRequest) {
                                         model: modelId,
                                         inputTokens: metadata.inputTokens,
                                         outputTokens: metadata.outputTokens,
+                                        cost,
                                     },
                                 });
 
@@ -164,6 +168,7 @@ export async function POST(request: NextRequest) {
                                     model: modelId,
                                     inputTokens: metadata.inputTokens,
                                     outputTokens: metadata.outputTokens,
+                                    cost,
                                 })}\n\n`));
 
                                 controller.close();

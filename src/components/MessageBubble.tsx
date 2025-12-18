@@ -11,6 +11,7 @@ interface MessageBubbleProps {
     model?: string | null;
     inputTokens?: number | null;
     outputTokens?: number | null;
+    cost?: number | null;
     selectMode?: boolean;
     isSelected?: boolean;
     onSelect?: () => void;
@@ -40,6 +41,7 @@ export function MessageBubble({
     model,
     inputTokens,
     outputTokens,
+    cost,
     selectMode,
     isSelected,
     onSelect,
@@ -114,10 +116,16 @@ export function MessageBubble({
                 )}
                 {createdAt && !isLoading && (
                     <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
-                        {/* Assistant 메시지만 모델명과 토큰 표시 */}
+                        {/* Assistant 메시지만 모델명, 토큰, 비용 표시 */}
                         {!isUser && model && (
-                            <span className="text-[10px] text-white/40">
-                                {model}{inputTokens != null && outputTokens != null ? ` · ${inputTokens}/${outputTokens}` : ''}
+                            <span className="text-[10px] text-white/40 flex gap-1 items-center">
+                                <span>{model}</span>
+                                {inputTokens != null && outputTokens != null && (
+                                    <span>· {inputTokens}/{outputTokens}</span>
+                                )}
+                                {cost != null && (
+                                    <span className="text-pink-400/60 font-medium">· ${cost.toFixed(4)}</span>
+                                )}
                             </span>
                         )}
                         <span className={cn(

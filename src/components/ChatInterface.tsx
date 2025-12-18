@@ -18,6 +18,7 @@ interface Message {
     model?: string | null;
     inputTokens?: number | null;
     outputTokens?: number | null;
+    cost?: number | null;
 }
 
 interface ModalState {
@@ -115,6 +116,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                         model: m.model,
                         inputTokens: m.inputTokens,
                         outputTokens: m.outputTokens,
+                        cost: m.cost,
                     }))
                 );
             } else if (conversationId && !hasCreatedGreeting.current) {
@@ -471,6 +473,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                 model={message.model}
                                 inputTokens={message.inputTokens}
                                 outputTokens={message.outputTokens}
+                                cost={message.cost}
                                 selectMode={selectMode}
                                 isSelected={selectedIds.has(message.id)}
                                 onSelect={() => toggleSelect(message.id)}

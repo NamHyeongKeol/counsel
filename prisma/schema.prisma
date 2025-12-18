@@ -41,6 +41,7 @@ model Message {
   model          String? // 사용된 AI 모델명
   inputTokens    Int? // AI 요청 시 입력 토큰 수
   outputTokens   Int? // AI 응답 시 출력 토큰 수
+  cost           Float? // 비용 (USD)
   isDeleted      Boolean      @default(false) // 소프트 삭제 플래그
   createdAt      DateTime     @default(now())
 
