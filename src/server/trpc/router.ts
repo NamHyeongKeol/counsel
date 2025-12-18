@@ -102,25 +102,40 @@ export const appRouter = router({
                 orderBy: { createdAt: "asc" },
             });
 
-            // AI 응답 생성
-            const aiResult = await chat({
-                messages: previousMessages.map((m) => ({
-                    role: m.role as "user" | "assistant",
-                    content: m.content,
-                })),
-            });
+            let assistantMessage;
 
-            // AI 응답 저장 (모델 및 토큰 정보 포함)
-            const assistantMessage = await ctx.prisma.message.create({
-                data: {
-                    conversationId: input.conversationId,
-                    role: "assistant",
-                    content: aiResult.content,
-                    model: aiResult.model,
-                    inputTokens: aiResult.inputTokens,
-                    outputTokens: aiResult.outputTokens,
-                },
-            });
+            try {
+                // AI 응답 생성
+                const aiResult = await chat({
+                    messages: previousMessages.map((m) => ({
+                        role: m.role as "user" | "assistant",
+                        content: m.content,
+                    })),
+                });
+
+                // AI 응답 저장 (모델 및 토큰 정보 포함)
+                assistantMessage = await ctx.prisma.message.create({
+                    data: {
+                        conversationId: input.conversationId,
+                        role: "assistant",
+                        content: aiResult.content,
+                        model: aiResult.model,
+                        inputTokens: aiResult.inputTokens,
+                        outputTokens: aiResult.outputTokens,
+                    },
+                });
+            } catch (error) {
+                console.error("AI 응답 생성 실패:", error);
+
+                // 에러 메시지도 DB에 저장 (삭제 가능하도록)
+                assistantMessage = await ctx.prisma.message.create({
+                    data: {
+                        conversationId: input.conversationId,
+                        role: "assistant",
+                        content: "죄송해요, 잠시 문제가 생겼어요. 다시 시도해주세요! 😢",
+                    },
+                });
+            }
 
             // 대화 제목 업데이트 (첫 메시지인 경우)
             if (previousMessages.length === 1) {
