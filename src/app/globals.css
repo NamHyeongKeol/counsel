@@ -136,6 +136,7 @@
     min-height: 100dvh;
     line-height: 1.5;
     letter-spacing: -0.01em;
+    background-color: #000;
   }
 
   * {

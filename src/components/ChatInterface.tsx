@@ -19,6 +19,9 @@ export function ChatInterface() {
     const [userId, setUserId] = useState<string | null>(null);
     const [conversationId, setConversationId] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -26,6 +29,9 @@ export function ChatInterface() {
     const createConversation = trpc.createConversation.useMutation();
     const sendMessage = trpc.sendMessage.useMutation();
     const getConversations = trpc.getConversations.useMutation();
+    const deleteMessage = trpc.deleteMessage.useMutation();
+    const deleteAllMessages = trpc.deleteAllMessages.useMutation();
+    const deleteMessagesExcept = trpc.deleteMessagesExcept.useMutation();
     const getMessages = trpc.getMessages.useQuery(
         { conversationId: conversationId || "" },
         { enabled: !!conversationId }
@@ -47,7 +53,6 @@ export function ChatInterface() {
     // 초기화 - 유저 생성 및 대화 불러오기/시작
     useEffect(() => {
         async function init() {
-            // 로컬스토리지에서 visitorId 가져오기 또는 생성
             let visitorId = localStorage.getItem("unni-visitor-id");
             if (!visitorId) {
                 visitorId = crypto.randomUUID();
@@ -57,42 +62,22 @@ export function ChatInterface() {
             const user = await getOrCreateUser.mutateAsync({ visitorId });
             setUserId(user.id);
 
-            // 기존 대화 조회
             const conversations = await getConversations.mutateAsync({ userId: user.id });
 
             if (conversations.length > 0) {
-                // 가장 최근 대화 불러오기
                 const latestConversation = conversations[0];
                 setConversationId(latestConversation.id);
-
-                // 인사 메시지 추가 (대화 기록은 useEffect에서 로드됨)
                 setMessages([
-                    {
-                        id: "greeting",
-                        role: "assistant",
-                        content: UNNI_GREETING,
-                        createdAt: new Date(),
-                    },
+                    { id: "greeting", role: "assistant", content: UNNI_GREETING, createdAt: new Date() },
                 ]);
             } else {
-                // 새 대화 시작
-                const conversation = await createConversation.mutateAsync({
-                    userId: user.id,
-                });
+                const conversation = await createConversation.mutateAsync({ userId: user.id });
                 setConversationId(conversation.id);
-
-                // 인사 메시지 추가
                 setMessages([
-                    {
-                        id: "greeting",
-                        role: "assistant",
-                        content: UNNI_GREETING,
-                        createdAt: new Date(),
-                    },
+                    { id: "greeting", role: "assistant", content: UNNI_GREETING, createdAt: new Date() },
                 ]);
             }
         }
-
         init();
     }, []);
 
@@ -100,12 +85,7 @@ export function ChatInterface() {
     useEffect(() => {
         if (getMessages.data && getMessages.data.length > 0) {
             setMessages([
-                {
-                    id: "greeting",
-                    role: "assistant",
-                    content: UNNI_GREETING,
-                    createdAt: new Date(),
-                },
+                { id: "greeting", role: "assistant", content: UNNI_GREETING, createdAt: new Date() },
                 ...getMessages.data.map((m) => ({
                     id: m.id,
                     role: m.role as "user" | "assistant",
@@ -130,57 +110,26 @@ export function ChatInterface() {
         const userInput = input.trim();
         setInput("");
 
-        // 낙관적 업데이트 - 사용자 메시지 추가
-        const tempUserMsg: Message = {
-            id: `temp-${Date.now()}`,
-            role: "user",
-            content: userInput,
-            createdAt: new Date(),
-        };
+        const tempUserMsg: Message = { id: `temp-${Date.now()}`, role: "user", content: userInput, createdAt: new Date() };
         setMessages((prev) => [...prev, tempUserMsg]);
 
-        // 로딩 메시지 추가
-        const loadingMsg: Message = {
-            id: "loading",
-            role: "assistant",
-            content: "",
-            createdAt: new Date(),
-            isLoading: true,
-        };
+        const loadingMsg: Message = { id: "loading", role: "assistant", content: "", createdAt: new Date(), isLoading: true };
         setMessages((prev) => [...prev, loadingMsg]);
 
         try {
-            const result = await sendMessage.mutateAsync({
-                conversationId,
-                content: userInput,
-            });
-
-            // 로딩 메시지를 실제 응답으로 교체
+            const result = await sendMessage.mutateAsync({ conversationId, content: userInput });
             setMessages((prev) =>
                 prev
                     .filter((m) => m.id !== "loading" && m.id !== tempUserMsg.id)
                     .concat([
-                        {
-                            id: result.userMessage.id,
-                            role: "user",
-                            content: result.userMessage.content,
-                            createdAt: result.userMessage.createdAt,
-                        },
-                        {
-                            id: result.assistantMessage.id,
-                            role: "assistant",
-                            content: result.assistantMessage.content,
-                            createdAt: result.assistantMessage.createdAt,
-                        },
+                        { id: result.userMessage.id, role: "user", content: result.userMessage.content, createdAt: result.userMessage.createdAt },
+                        { id: result.assistantMessage.id, role: "assistant", content: result.assistantMessage.content, createdAt: result.assistantMessage.createdAt },
                     ])
             );
         } catch {
-            // 에러 시 로딩 메시지를 에러 메시지로 교체
             setMessages((prev) =>
                 prev.map((m) =>
-                    m.id === "loading"
-                        ? { ...m, id: "error", content: "죄송해요, 잠시 문제가 생겼어요. 다시 시도해주세요! 😢", isLoading: false }
-                        : m
+                    m.id === "loading" ? { ...m, id: "error", content: "죄송해요, 잠시 문제가 생겼어요. 다시 시도해주세요! 😢", isLoading: false } : m
                 )
             );
         }
@@ -193,26 +142,125 @@ export function ChatInterface() {
         }
     };
 
+    // 단일 메시지 삭제
+    const handleDeleteMessage = async (messageId: string) => {
+        if (messageId === "greeting") return;
+        await deleteMessage.mutateAsync({ messageId });
+        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    };
+
+    // 전체 삭제
+    const handleDeleteAll = async () => {
+        if (!conversationId) return;
+        if (!confirm("모든 메시지를 삭제하시겠습니까?")) return;
+        await deleteAllMessages.mutateAsync({ conversationId });
+        setMessages([{ id: "greeting", role: "assistant", content: UNNI_GREETING, createdAt: new Date() }]);
+        setMenuOpen(false);
+    };
+
+    // 선택 모드 토글
+    const toggleSelectMode = () => {
+        setSelectMode(!selectMode);
+        setSelectedIds(new Set());
+        setMenuOpen(false);
+    };
+
+    // 메시지 선택 토글
+    const toggleSelect = (id: string) => {
+        if (id === "greeting") return;
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        setSelectedIds(newSet);
+    };
+
+    // 선택한 것 제외하고 삭제
+    const handleDeleteExceptSelected = async () => {
+        if (!conversationId || selectedIds.size === 0) return;
+        if (!confirm(`선택한 ${selectedIds.size}개 메시지를 제외하고 모두 삭제하시겠습니까?`)) return;
+        await deleteMessagesExcept.mutateAsync({ conversationId, keepMessageIds: Array.from(selectedIds) });
+        setMessages((prev) => prev.filter((m) => m.id === "greeting" || selectedIds.has(m.id)));
+        setSelectMode(false);
+        setSelectedIds(new Set());
+    };
+
     return (
-        <div className="fixed inset-0 bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
-            {/* 컨테이너 - 가운데 정렬, 고정 너비 */}
-            <div className="flex flex-col h-full w-full max-w-[390px] mx-auto">
-                {/* 헤더 - 상단 고정 */}
-                <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 bg-black/30 backdrop-blur-md border-b border-white/10">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0">
-                        <span className="text-white text-sm font-bold">언니</span>
+        <div className="fixed inset-0 bg-black">
+            <div className="flex flex-col h-full w-full max-w-[390px] mx-auto bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
+                {/* 헤더 */}
+                <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-md border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0">
+                            <span className="text-white text-sm font-bold">언니</span>
+                        </div>
+                        <div>
+                            <h1 className="text-white font-semibold">언니야</h1>
+                            <p className="text-white/60 text-xs">연애 전문 상담사</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-white font-semibold">언니야</h1>
-                        <p className="text-white/60 text-xs">연애 전문 상담사</p>
+
+                    {/* 햄버거 메뉴 */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setMenuOpen(!menuOpen)}
+                            className="p-2 text-white/70 hover:text-white"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+
+                        {menuOpen && (
+                            <div className="absolute right-0 top-12 w-48 bg-gray-900 rounded-lg shadow-xl border border-white/10 overflow-hidden z-20">
+                                <button
+                                    onClick={toggleSelectMode}
+                                    className="w-full px-4 py-3 text-left text-white/90 hover:bg-white/10 text-sm"
+                                >
+                                    {selectMode ? "✕ 선택 모드 취소" : "☐ 메시지 선택하기"}
+                                </button>
+                                <button
+                                    onClick={handleDeleteAll}
+                                    className="w-full px-4 py-3 text-left text-red-400 hover:bg-white/10 text-sm border-t border-white/10"
+                                >
+                                    🗑 전체 삭제
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </header>
 
-                {/* 채팅 영역 - 스크롤 가능 */}
-                <div
-                    ref={scrollRef}
-                    className="flex-1 overflow-y-auto px-4 py-4"
-                >
+                {/* 선택 모드 툴바 */}
+                {selectMode && (
+                    <div className="sticky top-[60px] z-10 flex items-center justify-between px-4 py-2 bg-pink-600/90 backdrop-blur-md">
+                        <span className="text-white text-sm">
+                            {selectedIds.size}개 선택됨
+                        </span>
+                        <div className="flex gap-2">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}
+                                className="text-white hover:bg-white/20"
+                            >
+                                취소
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={handleDeleteExceptSelected}
+                                disabled={selectedIds.size === 0}
+                                className="bg-white text-pink-600 hover:bg-white/90"
+                            >
+                                선택 제외 삭제
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* 채팅 영역 */}
+                <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
                     <div className="flex flex-col gap-4 pb-4 min-h-full">
                         {messages.map((message) => (
                             <MessageBubble
@@ -221,12 +269,17 @@ export function ChatInterface() {
                                 content={message.isLoading ? "" : message.content}
                                 createdAt={message.createdAt}
                                 isLoading={message.isLoading}
+                                selectMode={selectMode}
+                                isSelected={selectedIds.has(message.id)}
+                                onSelect={() => toggleSelect(message.id)}
+                                onDelete={() => handleDeleteMessage(message.id)}
+                                canDelete={message.id !== "greeting" && !message.isLoading}
                             />
                         ))}
                     </div>
                 </div>
 
-                {/* 입력 영역 - 하단 고정 */}
+                {/* 입력 영역 */}
                 <div className="sticky bottom-0 z-10 p-4 bg-black/30 backdrop-blur-md border-t border-white/10">
                     <form onSubmit={handleSubmit} className="flex gap-2 items-end">
                         <textarea
@@ -255,4 +308,5 @@ export function ChatInterface() {
         </div>
     );
 }
+
 

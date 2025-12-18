@@ -14,6 +14,7 @@ export const appRouter = router({
                     messages: {
                         take: 1,
                         orderBy: { createdAt: "desc" },
+                        where: { isDeleted: false },
                     },
                 },
             });
@@ -31,12 +32,15 @@ export const appRouter = router({
             });
         }),
 
-    // 대화 기록 조회
+    // 대화 기록 조회 (삭제되지 않은 메시지만)
     getMessages: publicProcedure
         .input(z.object({ conversationId: z.string() }))
         .query(async ({ ctx, input }) => {
             return ctx.prisma.message.findMany({
-                where: { conversationId: input.conversationId },
+                where: {
+                    conversationId: input.conversationId,
+                    isDeleted: false,
+                },
                 orderBy: { createdAt: "asc" },
             });
         }),
@@ -59,9 +63,12 @@ export const appRouter = router({
                 },
             });
 
-            // 이전 대화 기록 조회
+            // 이전 대화 기록 조회 (삭제되지 않은 것만)
             const previousMessages = await ctx.prisma.message.findMany({
-                where: { conversationId: input.conversationId },
+                where: {
+                    conversationId: input.conversationId,
+                    isDeleted: false,
+                },
                 orderBy: { createdAt: "asc" },
             });
 
@@ -73,12 +80,13 @@ export const appRouter = router({
                 })),
             });
 
-            // AI 응답 저장 (토큰 정보 포함)
+            // AI 응답 저장 (모델 및 토큰 정보 포함)
             const assistantMessage = await ctx.prisma.message.create({
                 data: {
                     conversationId: input.conversationId,
                     role: "assistant",
                     content: aiResult.content,
+                    model: aiResult.model,
                     inputTokens: aiResult.inputTokens,
                     outputTokens: aiResult.outputTokens,
                 },
@@ -98,6 +106,42 @@ export const appRouter = router({
                 userMessage,
                 assistantMessage,
             };
+        }),
+
+    // 단일 메시지 삭제 (소프트 삭제)
+    deleteMessage: publicProcedure
+        .input(z.object({ messageId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.message.update({
+                where: { id: input.messageId },
+                data: { isDeleted: true },
+            });
+        }),
+
+    // 대화 전체 메시지 삭제
+    deleteAllMessages: publicProcedure
+        .input(z.object({ conversationId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.message.updateMany({
+                where: { conversationId: input.conversationId },
+                data: { isDeleted: true },
+            });
+        }),
+
+    // 선택한 메시지 제외하고 삭제
+    deleteMessagesExcept: publicProcedure
+        .input(z.object({
+            conversationId: z.string(),
+            keepMessageIds: z.array(z.string()),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.message.updateMany({
+                where: {
+                    conversationId: input.conversationId,
+                    id: { notIn: input.keepMessageIds },
+                },
+                data: { isDeleted: true },
+            });
         }),
 
     // 임시 유저 생성 또는 조회
@@ -121,3 +165,4 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
+

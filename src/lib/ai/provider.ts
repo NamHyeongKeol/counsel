@@ -17,6 +17,7 @@ interface ChatOptions {
 
 export interface ChatResult {
     content: string;
+    model: string;
     inputTokens: number | null;
     outputTokens: number | null;
 }
@@ -73,6 +74,7 @@ async function chatWithOpenAI(
 
     return {
         content: response.choices[0]?.message?.content || "죄송해요, 답변을 생성하는데 문제가 있었어요.",
+        model,
         inputTokens: response.usage?.prompt_tokens ?? null,
         outputTokens: response.usage?.completion_tokens ?? null,
     };
@@ -98,6 +100,7 @@ async function chatWithAnthropic(messages: Message[]): Promise<ChatResult> {
         content: textBlock?.type === "text"
             ? textBlock.text
             : "죄송해요, 답변을 생성하는데 문제가 있었어요.",
+        model: "claude-sonnet-4-20250514",
         inputTokens: response.usage?.input_tokens ?? null,
         outputTokens: response.usage?.output_tokens ?? null,
     };
@@ -123,6 +126,7 @@ async function chatWithGoogle(messages: Message[]): Promise<ChatResult> {
 
     return {
         content: result.response.text(),
+        model: "gemini-3-flash-preview",
         inputTokens: usageMetadata?.promptTokenCount ?? null,
         outputTokens: usageMetadata?.candidatesTokenCount ?? null,
     };
