@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageBubble } from "@/components/MessageBubble";
 import { trpc } from "@/lib/trpc/client";
 import { UNNI_GREETING } from "@/lib/prompts/unni";
@@ -13,6 +11,7 @@ interface Message {
     role: "user" | "assistant";
     content: string;
     createdAt: Date;
+    isLoading?: boolean;
 }
 
 export function ChatInterface() {
@@ -21,6 +20,7 @@ export function ChatInterface() {
     const [conversationId, setConversationId] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const getOrCreateUser = trpc.getOrCreateUser.useMutation();
     const createConversation = trpc.createConversation.useMutation();
@@ -30,6 +30,19 @@ export function ChatInterface() {
         { conversationId: conversationId || "" },
         { enabled: !!conversationId }
     );
+
+    // textarea 자동 높이 조절
+    const adjustTextareaHeight = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+        }
+    };
+
+    useEffect(() => {
+        adjustTextareaHeight();
+    }, [input]);
 
     // 초기화 - 유저 생성 및 대화 불러오기/시작
     useEffect(() => {
@@ -130,8 +143,9 @@ export function ChatInterface() {
         const loadingMsg: Message = {
             id: "loading",
             role: "assistant",
-            content: "언니가 생각하고 있어요... 💭",
+            content: "",
             createdAt: new Date(),
+            isLoading: true,
         };
         setMessages((prev) => [...prev, loadingMsg]);
 
@@ -165,62 +179,80 @@ export function ChatInterface() {
             setMessages((prev) =>
                 prev.map((m) =>
                     m.id === "loading"
-                        ? { ...m, id: "error", content: "죄송해요, 잠시 문제가 생겼어요. 다시 시도해주세요! 😢" }
+                        ? { ...m, id: "error", content: "죄송해요, 잠시 문제가 생겼어요. 다시 시도해주세요! 😢", isLoading: false }
                         : m
                 )
             );
         }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
+        }
+    };
+
     return (
-        <div className="app-wrapper flex flex-col h-dvh bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
-            {/* 헤더 */}
-            <header className="flex items-center gap-3 px-4 py-3 bg-black/20 backdrop-blur-sm border-b border-white/10">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">언니</span>
-                </div>
-                <div>
-                    <h1 className="text-white font-semibold">언니야</h1>
-                    <p className="text-white/60 text-xs">연애 전문 상담사</p>
-                </div>
-            </header>
+        <div className="fixed inset-0 bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
+            {/* 컨테이너 - 가운데 정렬, 고정 너비 */}
+            <div className="flex flex-col h-full w-full max-w-[390px] mx-auto">
+                {/* 헤더 - 상단 고정 */}
+                <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 bg-black/30 backdrop-blur-md border-b border-white/10">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0">
+                        <span className="text-white text-sm font-bold">언니</span>
+                    </div>
+                    <div>
+                        <h1 className="text-white font-semibold">언니야</h1>
+                        <p className="text-white/60 text-xs">연애 전문 상담사</p>
+                    </div>
+                </header>
 
-            {/* 채팅 영역 */}
-            <ScrollArea className="flex-1 px-4 py-4" ref={scrollRef}>
-                <div className="flex flex-col gap-4 pb-4">
-                    {messages.map((message) => (
-                        <MessageBubble
-                            key={message.id}
-                            role={message.role}
-                            content={message.content}
-                            createdAt={message.createdAt}
+                {/* 채팅 영역 - 스크롤 가능 */}
+                <div
+                    ref={scrollRef}
+                    className="flex-1 overflow-y-auto px-4 py-4"
+                >
+                    <div className="flex flex-col gap-4 pb-4 min-h-full">
+                        {messages.map((message) => (
+                            <MessageBubble
+                                key={message.id}
+                                role={message.role}
+                                content={message.isLoading ? "" : message.content}
+                                createdAt={message.createdAt}
+                                isLoading={message.isLoading}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+                {/* 입력 영역 - 하단 고정 */}
+                <div className="sticky bottom-0 z-10 p-4 bg-black/30 backdrop-blur-md border-t border-white/10">
+                    <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+                        <textarea
+                            ref={textareaRef}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="고민을 이야기해주세요..."
+                            rows={1}
+                            className="flex-1 bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:border-pink-400 focus:outline-none rounded-2xl px-4 py-2.5 resize-none min-h-[42px] max-h-[120px] text-sm leading-relaxed"
+                            disabled={sendMessage.isPending}
                         />
-                    ))}
+                        <Button
+                            type="submit"
+                            disabled={!input.trim() || sendMessage.isPending}
+                            className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-full px-5 h-[42px] disabled:opacity-50 shrink-0"
+                        >
+                            {sendMessage.isPending ? "..." : "전송"}
+                        </Button>
+                    </form>
+                    <p className="text-center text-white/40 text-[0.625rem] mt-2">
+                        AI 상담은 참고용이며, 전문 상담이 필요하면 전문가를 찾아주세요.
+                    </p>
                 </div>
-            </ScrollArea>
-
-            {/* 입력 영역 */}
-            <div className="p-4 bg-black/20 backdrop-blur-sm border-t border-white/10">
-                <form onSubmit={handleSubmit} className="flex gap-2">
-                    <Input
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="고민을 이야기해주세요..."
-                        className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-pink-400 rounded-full px-4"
-                        disabled={sendMessage.isPending}
-                    />
-                    <Button
-                        type="submit"
-                        disabled={!input.trim() || sendMessage.isPending}
-                        className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-full px-6 disabled:opacity-50"
-                    >
-                        {sendMessage.isPending ? "..." : "전송"}
-                    </Button>
-                </form>
-                <p className="text-center text-white/40 text-[0.625rem] mt-2">
-                    AI 상담은 참고용이며, 전문 상담이 필요하면 전문가를 찾아주세요.
-                </p>
             </div>
         </div>
     );
 }
+
