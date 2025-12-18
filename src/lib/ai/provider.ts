@@ -120,7 +120,7 @@ async function chatWithGoogle(messages: Message[]): Promise<ChatResult> {
     const lastMessage = messages[messages.length - 1];
     const result = await chat.sendMessage(lastMessage.content);
     const usageMetadata = result.response.usageMetadata;
-    
+
     return {
         content: result.response.text(),
         inputTokens: usageMetadata?.promptTokenCount ?? null,
