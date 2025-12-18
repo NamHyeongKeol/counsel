@@ -153,35 +153,106 @@ export function ChatInterface() {
         }
     }, [messages]);
 
+    const [isStreaming, setIsStreaming] = useState(false);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || !conversationId || sendMessage.isPending) return;
+        if (!input.trim() || !conversationId || isStreaming) return;
 
         const userInput = input.trim();
         setInput("");
+        setIsStreaming(true);
 
-        const tempUserMsg: Message = { id: `temp-${Date.now()}`, role: "user", content: userInput, createdAt: new Date() };
-        setMessages((prev) => [...prev, tempUserMsg]);
+        // 임시 사용자 메시지 추가
+        const tempUserMsgId = `temp-${Date.now()}`;
+        setMessages((prev) => [...prev, {
+            id: tempUserMsgId,
+            role: "user",
+            content: userInput,
+            createdAt: new Date()
+        }]);
 
-        const loadingMsg: Message = { id: "loading", role: "assistant", content: "", createdAt: new Date(), isLoading: true };
-        setMessages((prev) => [...prev, loadingMsg]);
+        // 스트리밍 assistant 메시지 추가
+        const streamingMsgId = "streaming";
+        setMessages((prev) => [...prev, {
+            id: streamingMsgId,
+            role: "assistant",
+            content: "",
+            createdAt: new Date(),
+            isLoading: true
+        }]);
 
         try {
-            const result = await sendMessage.mutateAsync({ conversationId, content: userInput });
-            setMessages((prev) =>
-                prev
-                    .filter((m) => m.id !== "loading" && m.id !== tempUserMsg.id)
-                    .concat([
-                        { id: result.userMessage.id, role: "user", content: result.userMessage.content, createdAt: result.userMessage.createdAt },
-                        { id: result.assistantMessage.id, role: "assistant", content: result.assistantMessage.content, createdAt: result.assistantMessage.createdAt },
-                    ])
-            );
-        } catch {
-            setMessages((prev) =>
-                prev.map((m) =>
-                    m.id === "loading" ? { ...m, id: "error", content: "죄송해요, 잠시 문제가 생겼어요. 다시 시도해주세요! 😢", isLoading: false } : m
-                )
-            );
+            const response = await fetch("/api/chat/stream", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ conversationId, content: userInput }),
+            });
+
+            if (!response.ok) throw new Error("Stream request failed");
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let realUserMsgId = tempUserMsgId;
+            let realAssistantMsgId = streamingMsgId;
+            let assistantContent = "";
+
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split("\n\n").filter(line => line.startsWith("data: "));
+
+                    for (const line of lines) {
+                        const jsonStr = line.replace("data: ", "");
+                        try {
+                            const data = JSON.parse(jsonStr);
+
+                            if (data.type === "userMessage") {
+                                realUserMsgId = data.id;
+                                setMessages((prev) => prev.map((m) =>
+                                    m.id === tempUserMsgId
+                                        ? { ...m, id: data.id, createdAt: new Date(data.createdAt) }
+                                        : m
+                                ));
+                            } else if (data.type === "chunk") {
+                                assistantContent += data.content;
+                                setMessages((prev) => prev.map((m) =>
+                                    m.id === streamingMsgId
+                                        ? { ...m, content: assistantContent, isLoading: false }
+                                        : m
+                                ));
+                            } else if (data.type === "done") {
+                                realAssistantMsgId = data.assistantMessageId;
+                                setMessages((prev) => prev.map((m) =>
+                                    m.id === streamingMsgId
+                                        ? { ...m, id: data.assistantMessageId, createdAt: new Date(data.createdAt) }
+                                        : m
+                                ));
+                            } else if (data.type === "error") {
+                                setMessages((prev) => prev.map((m) =>
+                                    m.id === streamingMsgId
+                                        ? { ...m, id: data.assistantMessageId, content: data.content, isLoading: false }
+                                        : m
+                                ));
+                            }
+                        } catch (parseError) {
+                            // JSON 파싱 에러 무시
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Stream error:", error);
+            setMessages((prev) => prev.map((m) =>
+                m.id === "streaming"
+                    ? { ...m, id: "error", content: "죄송해요, 잠시 문제가 생겼어요. 다시 시도해주세요! 😢", isLoading: false }
+                    : m
+            ));
+        } finally {
+            setIsStreaming(false);
         }
     };
 
@@ -394,14 +465,14 @@ export function ChatInterface() {
                             placeholder="고민을 이야기해주세요..."
                             rows={1}
                             className="flex-1 bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:border-pink-400 focus:outline-none rounded-2xl px-4 py-2.5 resize-none min-h-[42px] max-h-[120px] text-sm leading-relaxed"
-                            disabled={sendMessage.isPending}
+                            disabled={isStreaming}
                         />
                         <Button
                             type="submit"
-                            disabled={!input.trim() || sendMessage.isPending}
+                            disabled={!input.trim() || isStreaming}
                             className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-full px-5 h-[42px] disabled:opacity-50 shrink-0"
                         >
-                            {sendMessage.isPending ? "..." : "전송"}
+                            {isStreaming ? "..." : "전송"}
                         </Button>
                     </form>
                 </div>
