@@ -54,8 +54,8 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
                         <div
                             key={s}
                             className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= ["name", "gender", "age"].indexOf(step)
-                                    ? "bg-pink-500"
-                                    : "bg-white/20"
+                                ? "bg-pink-500"
+                                : "bg-white/20"
                                 }`}
                         />
                     ))}
@@ -133,7 +133,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
                             <div className="text-center">
                                 <div className="text-4xl mb-3">🎂</div>
                                 <h2 className="text-xl font-bold text-white mb-2">
-                                    나이가 어떻게 되세요?
+                                    만 나이가 어떻게 되세요?
                                 </h2>
                                 <p className="text-white/60 text-sm">
                                     연령대에 맞는 상담을 해드릴게요
