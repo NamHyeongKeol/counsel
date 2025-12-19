@@ -7,8 +7,11 @@ import { MessageBubble } from "@/components/MessageBubble";
 import { ConversationList } from "@/components/ConversationList";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { CharacterProfile } from "@/components/CharacterProfile";
+import { FeedbackModal } from "@/components/FeedbackModal";
+import { EditMessageModal } from "@/components/EditMessageModal";
 import { trpc } from "@/lib/trpc/client";
 import { AI_MODELS, type AIModelId } from "@/lib/ai/constants";
+import { toast } from "sonner";
 
 interface Message {
     id: string;
@@ -47,6 +50,13 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
     const [showProfile, setShowProfile] = useState(false);
     const [currentCharacterId, setCurrentCharacterId] = useState<string | null>(null);
 
+    // 피드백/수정 모달 상태
+    const [feedbackModal, setFeedbackModal] = useState<{ isOpen: boolean; messageId: string | null }>({ isOpen: false, messageId: null });
+    const [editModal, setEditModal] = useState<{ isOpen: boolean; messageId: string | null; content: string }>({ isOpen: false, messageId: null, content: "" });
+
+    // 리액션 상태 (messageId -> "like" | "dislike" | null)
+    const [reactions, setReactions] = useState<Record<string, string | null>>({});
+
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -60,6 +70,12 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
     const deleteSelectedMessages = trpc.deleteSelectedMessages.useMutation();
     const createGreeting = trpc.createGreeting.useMutation();
     const updateConversationModel = trpc.updateConversationModel.useMutation();
+
+    // 새 mutation
+    const toggleReaction = trpc.toggleReaction.useMutation();
+    const addFeedback = trpc.addFeedback.useMutation();
+    const updateMessage = trpc.updateMessage.useMutation();
+    const rerollMessage = trpc.rerollMessage.useMutation();
 
     const utils = trpc.useUtils();
 
@@ -365,7 +381,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
 
     return (
         <div className="fixed inset-0 bg-black">
-            <div className="flex flex-col h-full w-full max-w-[390px] mx-auto bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
+            <div className="flex flex-col h-full w-full max-w-[390px] mx-auto bg-black">
                 {/* 헤더 */}
                 <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-md border-b border-white/10">
                     <div className="flex items-center gap-3">
@@ -525,25 +541,81 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                     characterName={characterName}
                                     // 새 액션 버튼 props
                                     isLastAssistantMessage={message.id === lastAssistantMessageId}
-                                    onReroll={() => {
-                                        // TODO: 리롤 기능 구현
-                                        console.log("Reroll message:", message.id);
+                                    isLiked={reactions[message.id] === "like"}
+                                    isDisliked={reactions[message.id] === "dislike"}
+                                    onReroll={async () => {
+                                        if (isStreaming) return;
+                                        setIsStreaming(true);
+
+                                        // Optimistic: 기존 메시지 삭제하고 로딩 메시지 추가
+                                        const oldMessageId = message.id;
+                                        const streamingMsgId = "reroll-streaming";
+                                        setMessages((prev) => prev.filter(m => m.id !== oldMessageId).concat({
+                                            id: streamingMsgId,
+                                            role: "assistant",
+                                            content: "",
+                                            createdAt: new Date(),
+                                            isLoading: true,
+                                        }));
+
+                                        try {
+                                            const newMessage = await rerollMessage.mutateAsync({
+                                                conversationId,
+                                                messageId: oldMessageId,
+                                            });
+                                            // 로딩 메시지를 실제 메시지로 교체
+                                            setMessages((prev) => prev.map(m =>
+                                                m.id === streamingMsgId ? {
+                                                    id: newMessage.id,
+                                                    role: "assistant",
+                                                    content: newMessage.content,
+                                                    createdAt: newMessage.createdAt,
+                                                    model: newMessage.model,
+                                                    inputTokens: newMessage.inputTokens,
+                                                    outputTokens: newMessage.outputTokens,
+                                                    cost: newMessage.cost,
+                                                } : m
+                                            ));
+                                        } catch (error) {
+                                            console.error("Reroll failed:", error);
+                                            // 에러 시 에러 메시지로 교체
+                                            setMessages((prev) => prev.map(m =>
+                                                m.id === streamingMsgId ? {
+                                                    ...m,
+                                                    id: "reroll-error",
+                                                    content: "죄송해요, 다시 생성하는 중 문제가 생겼어요. 다시 시도해주세요! 😢",
+                                                    isLoading: false,
+                                                } : m
+                                            ));
+                                        } finally {
+                                            setIsStreaming(false);
+                                        }
                                     }}
-                                    onLike={() => {
-                                        // TODO: 좋아요 기능 구현
-                                        console.log("Like message:", message.id);
+                                    onLike={async () => {
+                                        const result = await toggleReaction.mutateAsync({
+                                            messageId: message.id,
+                                            userId,
+                                            type: "like",
+                                        });
+                                        setReactions(prev => ({ ...prev, [message.id]: result.type }));
                                     }}
-                                    onDislike={() => {
-                                        // TODO: 싫어요 기능 구현
-                                        console.log("Dislike message:", message.id);
+                                    onDislike={async () => {
+                                        const result = await toggleReaction.mutateAsync({
+                                            messageId: message.id,
+                                            userId,
+                                            type: "dislike",
+                                        });
+                                        setReactions(prev => ({ ...prev, [message.id]: result.type }));
                                     }}
                                     onFeedback={() => {
-                                        // TODO: 피드백 기능 구현
-                                        console.log("Feedback message:", message.id);
+                                        setFeedbackModal({ isOpen: true, messageId: message.id });
                                     }}
                                     onEdit={() => {
-                                        // TODO: 수정 기능 구현
-                                        console.log("Edit message:", message.id);
+                                        setEditModal({ isOpen: true, messageId: message.id, content: message.content });
+                                    }}
+                                    onCopy={() => {
+                                        navigator.clipboard.writeText(message.content);
+                                        toast.success("복사되었습니다");
                                     }}
                                 />
                             ));
@@ -582,8 +654,40 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                 title={modal.title}
                 onConfirm={modal.onConfirm}
                 onCancel={closeModal}
-                confirmText="삭제"
-                danger
+                confirmText={modal.title === "다시 생성" ? "확인" : "삭제"}
+                danger={modal.title !== "다시 생성"}
+            />
+
+            {/* 피드백 모달 */}
+            <FeedbackModal
+                isOpen={feedbackModal.isOpen}
+                onClose={() => setFeedbackModal({ isOpen: false, messageId: null })}
+                onSubmit={async (content) => {
+                    if (!feedbackModal.messageId) return;
+                    await addFeedback.mutateAsync({
+                        messageId: feedbackModal.messageId,
+                        userId,
+                        content,
+                    });
+                }}
+            />
+
+            {/* 수정 모달 */}
+            <EditMessageModal
+                isOpen={editModal.isOpen}
+                currentContent={editModal.content}
+                onClose={() => setEditModal({ isOpen: false, messageId: null, content: "" })}
+                onSubmit={async (content) => {
+                    if (!editModal.messageId) return;
+                    await updateMessage.mutateAsync({
+                        messageId: editModal.messageId,
+                        content,
+                    });
+                    // 로컬 상태 업데이트
+                    setMessages(prev => prev.map(m =>
+                        m.id === editModal.messageId ? { ...m, content } : m
+                    ));
+                }}
             />
 
             {/* 캐릭터 프로필 Bottom Sheet */}

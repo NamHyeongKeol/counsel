@@ -30,6 +30,7 @@ interface MessageBubbleProps {
     onDislike?: () => void;
     onFeedback?: () => void;
     onEdit?: () => void;
+    onCopy?: () => void;
     isLiked?: boolean;
     isDisliked?: boolean;
 }
@@ -71,6 +72,7 @@ export function MessageBubble({
     onDislike,
     onFeedback,
     onEdit,
+    onCopy,
     isLiked,
     isDisliked,
 }: MessageBubbleProps) {
@@ -124,7 +126,7 @@ export function MessageBubble({
                 className={cn(
                     "rounded-2xl px-4 py-3 break-words max-w-[85%]",
                     isUser
-                        ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-tr-sm"
+                        ? "bg-green-800/60 text-white rounded-tr-sm"
                         : "bg-white/10 backdrop-blur-sm text-white rounded-tl-sm border border-white/10",
                     isSelected && "ring-2 ring-pink-400"
                 )}
@@ -218,21 +220,33 @@ export function MessageBubble({
                                         </svg>
                                     </button>
                                 )}
-                                {/* 싫어요 */}
+                                {/* 싫어요 - 빨간색으로 통일 */}
                                 {onDislike && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onDislike(); }}
                                         className={cn(
                                             "p-2 rounded-lg hover:bg-white/10 transition-colors group",
-                                            isDisliked && "bg-gray-500/20"
+                                            isDisliked && "bg-red-500/20"
                                         )}
                                         title="싫어요"
                                     >
                                         <svg className={cn(
                                             "w-4 h-4 transition-colors",
-                                            isDisliked ? "text-gray-400" : "text-white/40 group-hover:text-white/70"
+                                            isDisliked ? "text-red-400" : "text-white/40 group-hover:text-white/70"
                                         )} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                        </svg>
+                                    </button>
+                                )}
+                                {/* 복사 - 쉽게 접근 가능하도록 앞쪽 배치 */}
+                                {onCopy && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onCopy(); }}
+                                        className="p-2 rounded-lg hover:bg-white/10 transition-colors group"
+                                        title="복사"
+                                    >
+                                        <svg className="w-4 h-4 text-white/40 group-hover:text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                         </svg>
                                     </button>
                                 )}

@@ -3,6 +3,7 @@ import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { TRPCProvider } from "@/lib/trpc/client";
 import { BottomNav } from "@/components/BottomNav";
+import { Toaster } from "sonner";
 
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
@@ -40,6 +41,7 @@ export default function RootLayout({
         <TRPCProvider>
           {children}
           <BottomNav />
+          <Toaster position="top-center" richColors />
         </TRPCProvider>
       </body>
     </html>

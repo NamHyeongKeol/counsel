@@ -289,11 +289,11 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
                         {/* 소개 섹션 */}
                         <div className="px-4 py-6">
                             <div className="flex items-center gap-2 mb-3">
-                                <span className="px-3 py-1 bg-gray-800 rounded-full text-sm text-gray-300">
+                                <span className="px-3 py-1 bg-white/10 rounded-full text-sm text-white/80">
                                     👤 소개
                                 </span>
                             </div>
-                            <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            <div className="text-white/80 leading-relaxed whitespace-pre-wrap">
                                 {character.introduction}
                             </div>
                         </div>
@@ -302,7 +302,7 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
                         <div className="px-4 pb-6">
                             <div className="flex items-center gap-2 mb-4">
                                 <span className="font-bold text-white">댓글</span>
-                                <span className="px-2 py-0.5 bg-gray-700 rounded-full text-sm text-gray-300">
+                                <span className="px-2 py-0.5 bg-white/10 rounded-full text-sm text-white/70">
                                     {comments.length}
                                 </span>
                             </div>
@@ -310,7 +310,7 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
                             {/* 댓글 목록 */}
                             <div className="space-y-4 mb-4">
                                 {comments.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">
+                                    <p className="text-white/50 text-center py-4">
                                         아직 댓글이 없어요. 첫 댓글을 남겨보세요!
                                     </p>
                                 ) : (
@@ -324,11 +324,11 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
                                                     <span className="font-medium text-white text-sm">
                                                         {c.user.nickname || "익명"}
                                                     </span>
-                                                    <span className="text-gray-500 text-xs">
+                                                    <span className="text-white/50 text-xs">
                                                         {formatTime(c.createdAt)}
                                                     </span>
                                                 </div>
-                                                <p className="text-gray-300 text-sm mt-1">{c.content}</p>
+                                                <p className="text-white/80 text-sm mt-1">{c.content}</p>
                                             </div>
                                         </div>
                                     ))

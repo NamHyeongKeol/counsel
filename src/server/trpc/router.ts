@@ -213,6 +213,149 @@ export const appRouter = router({
             });
         }),
 
+    // 메시지 reaction 토글 (좋아요/싫어요)
+    toggleReaction: publicProcedure
+        .input(z.object({
+            messageId: z.string(),
+            userId: z.string(),
+            type: z.enum(["like", "dislike"]),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            // 기존 리액션 확인
+            const existing = await ctx.prisma.messageReaction.findUnique({
+                where: {
+                    messageId_userId: {
+                        messageId: input.messageId,
+                        userId: input.userId,
+                    },
+                },
+            });
+
+            if (existing) {
+                if (existing.type === input.type) {
+                    // 같은 타입이면 삭제 (토글 해제)
+                    await ctx.prisma.messageReaction.delete({
+                        where: { id: existing.id },
+                    });
+                    return { action: "removed", type: null };
+                } else {
+                    // 다른 타입이면 업데이트
+                    await ctx.prisma.messageReaction.update({
+                        where: { id: existing.id },
+                        data: { type: input.type },
+                    });
+                    return { action: "updated", type: input.type };
+                }
+            } else {
+                // 새로 생성
+                await ctx.prisma.messageReaction.create({
+                    data: {
+                        messageId: input.messageId,
+                        userId: input.userId,
+                        type: input.type,
+                    },
+                });
+                return { action: "created", type: input.type };
+            }
+        }),
+
+    // 메시지 피드백 추가
+    addFeedback: publicProcedure
+        .input(z.object({
+            messageId: z.string(),
+            userId: z.string(),
+            content: z.string(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.messageFeedback.create({
+                data: {
+                    messageId: input.messageId,
+                    userId: input.userId,
+                    content: input.content,
+                },
+            });
+        }),
+
+    // 메시지 내용 수정
+    updateMessage: publicProcedure
+        .input(z.object({
+            messageId: z.string(),
+            content: z.string(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.message.update({
+                where: { id: input.messageId },
+                data: { content: input.content },
+            });
+        }),
+
+    // 리롤 - 마지막 AI 응답 재생성
+    rerollMessage: publicProcedure
+        .input(z.object({
+            conversationId: z.string(),
+            messageId: z.string(), // 삭제할 기존 assistant 메시지 ID
+        }))
+        .mutation(async ({ ctx, input }) => {
+            // 기존 메시지 삭제 (소프트 삭제)
+            await ctx.prisma.message.update({
+                where: { id: input.messageId },
+                data: { isDeleted: true },
+            });
+
+            // 대화방 정보 조회 (모델, 캐릭터 정보)
+            const conversation = await ctx.prisma.conversation.findUnique({
+                where: { id: input.conversationId },
+                include: { character: true },
+            });
+
+            if (!conversation) throw new Error("대화방을 찾을 수 없습니다.");
+
+            // 이전 대화 기록 조회 (삭제되지 않은 것만)
+            const previousMessages = await ctx.prisma.message.findMany({
+                where: {
+                    conversationId: input.conversationId,
+                    isDeleted: false,
+                },
+                orderBy: { createdAt: "asc" },
+            });
+
+            let assistantMessage;
+            try {
+                // AI 응답 재생성
+                const aiResult = await chat({
+                    messages: previousMessages.map((m) => ({
+                        role: m.role as "user" | "assistant",
+                        content: m.content,
+                    })),
+                    modelId: conversation.model as import("@/lib/ai/constants").AIModelId | undefined,
+                    systemPrompt: conversation.character?.systemPrompt,
+                });
+
+                // 새 AI 응답 저장
+                assistantMessage = await ctx.prisma.message.create({
+                    data: {
+                        conversationId: input.conversationId,
+                        role: "assistant",
+                        content: aiResult.content,
+                        model: aiResult.model,
+                        inputTokens: aiResult.inputTokens,
+                        outputTokens: aiResult.outputTokens,
+                    },
+                });
+            } catch (error) {
+                console.error("리롤 AI 응답 생성 실패:", error);
+                assistantMessage = await ctx.prisma.message.create({
+                    data: {
+                        conversationId: input.conversationId,
+                        role: "assistant",
+                        content: "죄송해요, 다시 생성하는 중 문제가 생겼어요. 다시 시도해주세요! 😢",
+                    },
+                });
+            }
+
+            return assistantMessage;
+        }),
+
     // 인트로(인사) 메시지 생성 (대화방에 연결된 캐릭터의 greeting 사용)
     createGreeting: publicProcedure
         .input(z.object({

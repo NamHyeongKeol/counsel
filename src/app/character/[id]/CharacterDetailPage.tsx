@@ -22,6 +22,7 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isStartingChat, setIsStartingChat] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
     const router = useRouter();
 
@@ -39,9 +40,46 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
         { enabled: !!getCharacter.data?.id }
     );
     const addComment = trpc.addCharacterComment.useMutation();
+    const createConversation = trpc.createConversation.useMutation();
+    const getOrCreateUser = trpc.getOrCreateUser.useMutation();
 
     const character = getCharacter.data as Character | null;
     const comments = getComments.data?.comments || [];
+
+    // 대화 시작하기
+    const handleStartChat = async () => {
+        if (!character || isStartingChat) return;
+
+        setIsStartingChat(true);
+        try {
+            // userId가 없으면 생성
+            let currentUserId = userId;
+            if (!currentUserId) {
+                let visitorId = localStorage.getItem("unni-visitor-id");
+                if (!visitorId) {
+                    visitorId = crypto.randomUUID();
+                    localStorage.setItem("unni-visitor-id", visitorId);
+                }
+                const user = await getOrCreateUser.mutateAsync({ visitorId });
+                currentUserId = user.id;
+                localStorage.setItem("userId", user.id);
+                setUserId(user.id);
+            }
+
+            // 새 대화방 생성
+            const conversation = await createConversation.mutateAsync({
+                userId: currentUserId,
+                characterId: character.id,
+            });
+
+            // 대화방으로 이동
+            router.push(`/chat/${conversation.id}`);
+        } catch (error) {
+            console.error("대화 시작 실패:", error);
+        } finally {
+            setIsStartingChat(false);
+        }
+    };
 
     // 댓글 작성
     const handleSubmitComment = async () => {
@@ -63,8 +101,6 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
             setIsSubmitting(false);
         }
     };
-
-    // 이미지 네비게이션
     const nextImage = () => {
         if (character && character.images.length > 1) {
             setCurrentImageIndex((prev) =>
@@ -189,35 +225,36 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
                     <div className="max-w-lg mx-auto px-4 py-6">
                         {/* 이름 & 태그라인 */}
                         <div className="mb-6">
-                            <h2 className="text-2xl font-bold">{character.name}</h2>
+                            <h2 className="text-2xl font-bold text-white">{character.name}</h2>
                             {character.tagline && (
-                                <p className="text-gray-400 mt-1 italic">"{character.tagline}"</p>
+                                <p className="text-pink-300 mt-1 italic">"{character.tagline}"</p>
                             )}
                         </div>
 
                         {/* 대화 시작 버튼 */}
                         <button
-                            onClick={() => router.push(`/?character=${character.slug}`)}
-                            className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 rounded-xl font-medium mb-6"
+                            onClick={handleStartChat}
+                            disabled={isStartingChat}
+                            className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 disabled:opacity-50 rounded-xl font-medium mb-6 text-white"
                         >
-                            💬 대화 시작하기
+                            {isStartingChat ? "대화방 생성 중..." : "💬 대화 시작하기"}
                         </button>
 
                         {/* 소개 */}
                         <div className="mb-8">
-                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                <span className="px-2 py-0.5 bg-gray-800 rounded text-sm">👤 소개</span>
+                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-white">
+                                <span className="px-2 py-0.5 bg-white/10 rounded text-sm">👤 소개</span>
                             </h3>
-                            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            <p className="text-white/80 leading-relaxed whitespace-pre-wrap">
                                 {character.introduction}
                             </p>
                         </div>
 
                         {/* 댓글 */}
                         <div>
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
                                 <span>댓글</span>
-                                <span className="px-2 py-0.5 bg-gray-700 rounded-full text-sm text-gray-300">
+                                <span className="px-2 py-0.5 bg-white/10 rounded-full text-sm text-white/70">
                                     {comments.length}
                                 </span>
                             </h3>
@@ -251,7 +288,7 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
                             {/* 댓글 목록 */}
                             <div className="space-y-4 mb-6">
                                 {comments.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">
+                                    <p className="text-white/50 text-center py-4">
                                         아직 댓글이 없어요. 첫 댓글을 남겨보세요!
                                     </p>
                                 ) : (
@@ -265,11 +302,11 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
                                                     <span className="font-medium text-sm text-white">
                                                         {c.user.nickname || "익명"}
                                                     </span>
-                                                    <span className="text-gray-500 text-xs">
+                                                    <span className="text-white/50 text-xs">
                                                         {formatTime(c.createdAt)}
                                                     </span>
                                                 </div>
-                                                <p className="text-gray-300 text-sm mt-1">{c.content}</p>
+                                                <p className="text-white/80 text-sm mt-1">{c.content}</p>
                                             </div>
                                         </div>
                                     ))
