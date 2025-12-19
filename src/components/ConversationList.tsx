@@ -113,7 +113,7 @@ export function ConversationList({
     };
 
     return (
-        <div className="flex flex-col h-full bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
+        <div className="flex flex-col h-full bg-black">
             {/* 헤더 */}
             <header className="relative flex items-center justify-center h-14 border-b border-white/10 shrink-0">
                 <h1 className="text-lg font-bold text-white">대화 목록</h1>

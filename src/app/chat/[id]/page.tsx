@@ -19,6 +19,13 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                 localStorage.setItem("unni-visitor-id", visitorId);
             }
             const user = await getOrCreateUser.mutateAsync({ visitorId });
+
+            // name 없으면 온보딩으로 리다이렉트
+            if (!user.name) {
+                router.replace("/");
+                return;
+            }
+
             setUserId(user.id);
         }
         init();

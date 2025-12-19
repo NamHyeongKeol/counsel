@@ -185,9 +185,8 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
             {/* Bottom Sheet */}
             <div
                 ref={sheetRef}
-                className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] max-h-[90vh] bg-gray-900 rounded-t-3xl overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isVisible ? "translate-y-0" : "translate-y-full"
+                className={`absolute bottom-0 inset-x-0 mx-auto w-full max-w-[390px] max-h-[90vh] bg-gray-900 rounded-t-3xl overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isVisible ? "translate-y-0" : "translate-y-full"
                     }`}
-                style={{ transform: isVisible ? 'translateX(-50%)' : 'translateX(-50%) translateY(100%)' }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}

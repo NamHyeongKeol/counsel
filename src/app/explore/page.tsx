@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import Link from "next/link";
 
@@ -15,6 +16,7 @@ interface Character {
 }
 
 export default function ExplorePage() {
+    const router = useRouter();
     const [userId, setUserId] = useState<string | null>(null);
     const getOrCreateUser = trpc.getOrCreateUser.useMutation();
     const getPublicCharacters = trpc.getPublicCharacters.useQuery();
@@ -27,6 +29,13 @@ export default function ExplorePage() {
                 localStorage.setItem("unni-visitor-id", visitorId);
             }
             const user = await getOrCreateUser.mutateAsync({ visitorId });
+
+            // name 없으면 온보딩으로 리다이렉트
+            if (!user.name) {
+                router.replace("/");
+                return;
+            }
+
             setUserId(user.id);
         }
         init();

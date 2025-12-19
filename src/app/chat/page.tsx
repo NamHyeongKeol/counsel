@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ConversationList } from "@/components/ConversationList";
 import { trpc } from "@/lib/trpc/client";
 
 export default function ChatListPage() {
+    const router = useRouter();
     const [userId, setUserId] = useState<string | null>(null);
     const getOrCreateUser = trpc.getOrCreateUser.useMutation();
 
@@ -16,6 +18,13 @@ export default function ChatListPage() {
                 localStorage.setItem("unni-visitor-id", visitorId);
             }
             const user = await getOrCreateUser.mutateAsync({ visitorId });
+            
+            // name 없으면 온보딩으로 리다이렉트
+            if (!user.name) {
+                router.replace("/");
+                return;
+            }
+            
             setUserId(user.id);
         }
         init();
