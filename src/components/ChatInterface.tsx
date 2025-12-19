@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MessageBubble } from "@/components/MessageBubble";
 import { ConversationList } from "@/components/ConversationList";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { CharacterProfile } from "@/components/CharacterProfile";
 import { trpc } from "@/lib/trpc/client";
 import { AI_MODELS, type AIModelId } from "@/lib/ai/constants";
 
@@ -43,6 +44,8 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
     const [modal, setModal] = useState<ModalState>({ isOpen: false, message: "", onConfirm: () => { } });
     const [isStreaming, setIsStreaming] = useState(false);
     const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState<string | null>(null);
+    const [showProfile, setShowProfile] = useState(false);
+    const [currentCharacterId, setCurrentCharacterId] = useState<string | null>(null);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -69,6 +72,28 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
         { conversationId: conversationId || "" },
         { enabled: !!conversationId }
     );
+
+    // 기본 캐릭터 조회 (첫 번째 활성 캐릭터 사용)
+    const getActiveCharacters = trpc.getActiveCharacters.useQuery();
+
+    // 현재 캐릭터 정보
+    const character = getActiveCharacters.data?.[0];
+    const characterImage = character?.images?.[0]?.imageUrl || null;
+    const characterName = character?.name || "언니";
+
+    // 캐릭터 ID 설정
+    useEffect(() => {
+        if (character?.id && !currentCharacterId) {
+            setCurrentCharacterId(character.id);
+        }
+    }, [character?.id, currentCharacterId]);
+
+    // 프로필 열기
+    const handleOpenProfile = () => {
+        if (currentCharacterId) {
+            setShowProfile(true);
+        }
+    };
 
     // 햄버거 메뉴 바깥 클릭 시 닫힘 (모바일 터치 포함)
     useEffect(() => {
@@ -349,11 +374,18 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0">
-                            <span className="text-white text-sm font-bold">언니</span>
-                        </div>
+                        <button
+                            onClick={handleOpenProfile}
+                            className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0 overflow-hidden hover:ring-2 hover:ring-white/30 transition-all"
+                        >
+                            {characterImage ? (
+                                <img src={characterImage} alt={characterName} className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-white text-sm font-bold">{characterName.slice(0, 2)}</span>
+                            )}
+                        </button>
                         <div>
-                            <h1 className="text-white font-semibold">언니야</h1>
+                            <h1 className="text-white font-semibold">{characterName}야</h1>
                             <p className="text-white/60 text-xs">
                                 {getConversation.data?.model
                                     ? AI_MODELS[getConversation.data.model as AIModelId]?.name || "AI"
@@ -479,6 +511,9 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                 onSelect={() => toggleSelect(message.id)}
                                 onDelete={() => requestDeleteMessage(message.id)}
                                 canDelete={!message.isLoading}
+                                onAvatarClick={handleOpenProfile}
+                                characterImage={characterImage}
+                                characterName={characterName}
                             />
                         ))}
                     </div>
@@ -518,6 +553,16 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                 confirmText="삭제"
                 danger
             />
+
+            {/* 캐릭터 프로필 Bottom Sheet */}
+            {currentCharacterId && (
+                <CharacterProfile
+                    characterId={currentCharacterId}
+                    userId={userId}
+                    isOpen={showProfile}
+                    onClose={() => setShowProfile(false)}
+                />
+            )}
         </div>
     );
 }

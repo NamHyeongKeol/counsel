@@ -2,12 +2,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import ReactMarkdown from "react-markdown";
 
 interface Conversation {
     id: string;
     title: string | null;
     updatedAt: Date;
     messages?: { content: string }[];
+    character?: {
+        id: string;
+        name: string;
+        images?: { imageUrl: string }[];
+    } | null;
 }
 
 interface ConversationListProps {
@@ -150,13 +156,41 @@ export function ConversationList({
                                     : "hover:bg-white/5"
                                     }`}
                             >
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-white font-medium truncate">
-                                        {conv.title || "새 대화"}
-                                    </p>
-                                    <p className="text-white/50 text-sm truncate">
-                                        {getPreview(conv)}
-                                    </p>
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {/* 캐릭터 아바타 */}
+                                    {conv.character?.images?.[0] ? (
+                                        <img
+                                            src={conv.character.images[0].imageUrl}
+                                            alt={conv.character.name}
+                                            className="w-10 h-10 rounded-full object-cover shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0">
+                                            <span className="text-white text-sm font-bold">
+                                                {conv.character?.name?.[0] || "언"}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-white font-medium truncate prose prose-invert prose-sm max-w-none prose-strong:text-pink-300 prose-p:inline">
+                                            {conv.character?.name || "언니"}
+                                            {conv.title && (
+                                                <>
+                                                    <span className="text-white/50"> · </span>
+                                                    <ReactMarkdown
+                                                        components={{
+                                                            p: ({ children }) => <span>{children}</span>,
+                                                        }}
+                                                    >
+                                                        {conv.title}
+                                                    </ReactMarkdown>
+                                                </>
+                                            )}
+                                        </div>
+                                        <p className="text-white/50 text-sm truncate">
+                                            {getPreview(conv)}
+                                        </p>
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-2 ml-2">
                                     <span className="text-white/40 text-xs whitespace-nowrap">

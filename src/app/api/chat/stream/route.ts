@@ -45,6 +45,42 @@ async function getSystemPromptFromDB(intimacyLevel: number = 1): Promise<string>
     }
 }
 
+// 대화 제목 생성 (AI에게 요약 요청)
+async function generateConversationTitle(
+    conversationId: string,
+    userMessage: string,
+    modelId: AIModelId
+): Promise<void> {
+    try {
+        // Gemini에게 요약 요청
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        const prompt = `다음 상담 요청을 한글 10자 이내로 요약해줘. 핵심 키워드만 추출해서 짧게. 예시: "카톡 답장 고민", "고백 타이밍", "썸남 관심 분석"
+
+유저 메시지: "${userMessage}"
+
+요약:`;
+
+        const result = await model.generateContent(prompt);
+        const summary = result.response.text().trim().slice(0, 20); // 최대 20자
+
+        if (summary) {
+            await prisma.conversation.update({
+                where: { id: conversationId },
+                data: { title: summary },
+            });
+        }
+    } catch (error) {
+        console.error("대화 제목 생성 실패:", error);
+        // 실패 시 원본 메시지 앞부분 사용
+        await prisma.conversation.update({
+            where: { id: conversationId },
+            data: { title: userMessage.slice(0, 15) },
+        });
+    }
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -150,14 +186,11 @@ export async function POST(request: NextRequest) {
                                     },
                                 });
 
-                                // 대화 제목 업데이트 (첫 메시지인 경우)
-                                if (previousMessages.length === 1) {
-                                    await prisma.conversation.update({
-                                        where: { id: conversationId },
-                                        data: {
-                                            title: content.slice(0, 50) + (content.length > 50 ? "..." : ""),
-                                        },
-                                    });
+                                // 대화 제목 업데이트 (첫 유저 메시지인 경우 AI에게 요약 요청)
+                                const userMessagesCount = previousMessages.filter(m => m.role === "user").length;
+                                if (userMessagesCount <= 1) {
+                                    // 비동기로 요약 요청 (응답을 기다리지 않음)
+                                    generateConversationTitle(conversationId, content, modelId).catch(console.error);
                                 }
 
                                 // 완료 메시지 전송

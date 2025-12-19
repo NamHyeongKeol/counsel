@@ -20,6 +20,16 @@ export const appRouter = router({
                         orderBy: { createdAt: "desc" },
                         where: { isDeleted: false },
                     },
+                    character: {
+                        select: {
+                            id: true,
+                            name: true,
+                            images: {
+                                take: 1,
+                                orderBy: { order: "asc" },
+                            },
+                        },
+                    },
                 },
             });
         }),
@@ -291,6 +301,338 @@ export const appRouter = router({
             return ctx.prisma.conversation.update({
                 where: { id: input.conversationId },
                 data: { model: input.model },
+            });
+        }),
+
+    // ============================================
+    // 캐릭터 관리 API
+    // ============================================
+
+    // 모든 캐릭터 조회
+    getCharacters: publicProcedure
+        .query(async ({ ctx }) => {
+            return ctx.prisma.character.findMany({
+                orderBy: { createdAt: "desc" },
+                include: {
+                    images: {
+                        orderBy: { order: "asc" },
+                    },
+                    _count: {
+                        select: {
+                            conversations: true,
+                            comments: true,
+                        },
+                    },
+                },
+            });
+        }),
+
+    // 활성 캐릭터만 조회 (내부용 - 챗에서 사용)
+    getActiveCharacters: publicProcedure
+        .query(async ({ ctx }) => {
+            return ctx.prisma.character.findMany({
+                where: { isActive: true },
+                orderBy: { createdAt: "desc" },
+                include: {
+                    images: {
+                        orderBy: { order: "asc" },
+                    },
+                },
+            });
+        }),
+
+    // 공개 캐릭터 목록 (유저 탐색용)
+    getPublicCharacters: publicProcedure
+        .query(async ({ ctx }) => {
+            return ctx.prisma.character.findMany({
+                where: { isActive: true, isPublic: true },
+                orderBy: { createdAt: "desc" },
+                include: {
+                    images: {
+                        orderBy: { order: "asc" },
+                    },
+                    _count: {
+                        select: {
+                            conversations: true,
+                            comments: true,
+                        },
+                    },
+                },
+            });
+        }),
+
+    // 공개 캐릭터 상세 조회 (유저용 - isPublic 체크)
+    getPublicCharacter: publicProcedure
+        .input(z.object({
+            id: z.string().optional(),
+            slug: z.string().optional(),
+        }))
+        .query(async ({ ctx, input }) => {
+            if (!input.id && !input.slug) {
+                throw new Error("id 또는 slug가 필요합니다");
+            }
+            return ctx.prisma.character.findFirst({
+                where: {
+                    ...(input.id ? { id: input.id } : { slug: input.slug }),
+                    isActive: true,
+                    isPublic: true,
+                },
+                include: {
+                    images: {
+                        orderBy: { order: "asc" },
+                    },
+                },
+            });
+        }),
+
+    // 단일 캐릭터 조회
+    getCharacter: publicProcedure
+        .input(z.object({
+            id: z.string().optional(),
+            slug: z.string().optional(),
+        }))
+        .query(async ({ ctx, input }) => {
+            if (!input.id && !input.slug) {
+                throw new Error("id 또는 slug가 필요합니다");
+            }
+            return ctx.prisma.character.findFirst({
+                where: input.id ? { id: input.id } : { slug: input.slug },
+                include: {
+                    images: {
+                        orderBy: { order: "asc" },
+                    },
+                },
+            });
+        }),
+
+    // 캐릭터 생성
+    createCharacter: publicProcedure
+        .input(z.object({
+            name: z.string(),
+            slug: z.string(),
+            tagline: z.string().optional(),
+            introduction: z.string(),
+            systemPrompt: z.string(),
+            greeting: z.string(),
+            imageUrls: z.array(z.string()).optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const character = await ctx.prisma.character.create({
+                data: {
+                    name: input.name,
+                    slug: input.slug,
+                    tagline: input.tagline,
+                    introduction: input.introduction,
+                    systemPrompt: input.systemPrompt,
+                    greeting: input.greeting,
+                },
+            });
+
+            // 이미지 추가
+            if (input.imageUrls && input.imageUrls.length > 0) {
+                await ctx.prisma.characterImage.createMany({
+                    data: input.imageUrls.map((url, index) => ({
+                        characterId: character.id,
+                        imageUrl: url,
+                        order: index,
+                    })),
+                });
+            }
+
+            return ctx.prisma.character.findUnique({
+                where: { id: character.id },
+                include: {
+                    images: {
+                        orderBy: { order: "asc" },
+                    },
+                },
+            });
+        }),
+
+    // 캐릭터 수정
+    updateCharacter: publicProcedure
+        .input(z.object({
+            id: z.string(),
+            name: z.string().optional(),
+            slug: z.string().optional(),
+            tagline: z.string().nullable().optional(),
+            introduction: z.string().optional(),
+            systemPrompt: z.string().optional(),
+            greeting: z.string().optional(),
+            isActive: z.boolean().optional(),
+            isPublic: z.boolean().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const { id, ...data } = input;
+            return ctx.prisma.character.update({
+                where: { id },
+                data: Object.fromEntries(
+                    Object.entries(data).filter(([, v]) => v !== undefined)
+                ),
+            });
+        }),
+
+    // 캐릭터 삭제
+    deleteCharacter: publicProcedure
+        .input(z.object({ id: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.character.delete({
+                where: { id: input.id },
+            });
+        }),
+
+    // ============================================
+    // 캐릭터 이미지 관리 API
+    // ============================================
+
+    // 이미지 추가
+    addCharacterImage: publicProcedure
+        .input(z.object({
+            characterId: z.string(),
+            imageUrl: z.string(),
+            order: z.number().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            // 순서가 지정되지 않으면 마지막에 추가
+            let order = input.order;
+            if (order === undefined) {
+                const lastImage = await ctx.prisma.characterImage.findFirst({
+                    where: { characterId: input.characterId },
+                    orderBy: { order: "desc" },
+                });
+                order = (lastImage?.order ?? -1) + 1;
+            }
+
+            return ctx.prisma.characterImage.create({
+                data: {
+                    characterId: input.characterId,
+                    imageUrl: input.imageUrl,
+                    order,
+                },
+            });
+        }),
+
+    // 이미지 삭제
+    removeCharacterImage: publicProcedure
+        .input(z.object({ id: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.characterImage.delete({
+                where: { id: input.id },
+            });
+        }),
+
+    // 이미지 순서 변경
+    reorderCharacterImages: publicProcedure
+        .input(z.object({
+            characterId: z.string(),
+            imageIds: z.array(z.string()),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const updates = input.imageIds.map((id, index) =>
+                ctx.prisma.characterImage.update({
+                    where: { id },
+                    data: { order: index },
+                })
+            );
+            await ctx.prisma.$transaction(updates);
+            return true;
+        }),
+
+    // ============================================
+    // 캐릭터 댓글 API
+    // ============================================
+
+    // 댓글 목록 조회
+    getCharacterComments: publicProcedure
+        .input(z.object({
+            characterId: z.string(),
+            limit: z.number().default(20),
+            cursor: z.string().optional(),
+        }))
+        .query(async ({ ctx, input }) => {
+            const comments = await ctx.prisma.characterComment.findMany({
+                where: { characterId: input.characterId },
+                take: input.limit + 1,
+                cursor: input.cursor ? { id: input.cursor } : undefined,
+                orderBy: { createdAt: "desc" },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            nickname: true,
+                        },
+                    },
+                },
+            });
+
+            let nextCursor: string | undefined;
+            if (comments.length > input.limit) {
+                const nextItem = comments.pop();
+                nextCursor = nextItem!.id;
+            }
+
+            return {
+                comments,
+                nextCursor,
+            };
+        }),
+
+    // 댓글 작성
+    addCharacterComment: publicProcedure
+        .input(z.object({
+            characterId: z.string(),
+            userId: z.string(),
+            content: z.string(),
+            isPrivate: z.boolean().default(false),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.characterComment.create({
+                data: {
+                    characterId: input.characterId,
+                    userId: input.userId,
+                    content: input.content,
+                    isPrivate: input.isPrivate,
+                },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            nickname: true,
+                        },
+                    },
+                },
+            });
+        }),
+
+    // 댓글 삭제
+    deleteCharacterComment: publicProcedure
+        .input(z.object({
+            id: z.string(),
+            userId: z.string(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            // 본인 댓글만 삭제 가능
+            const comment = await ctx.prisma.characterComment.findUnique({
+                where: { id: input.id },
+            });
+            if (!comment || comment.userId !== input.userId) {
+                throw new Error("삭제 권한이 없습니다");
+            }
+            return ctx.prisma.characterComment.delete({
+                where: { id: input.id },
+            });
+        }),
+
+    // 유저 닉네임 업데이트
+    updateUserNickname: publicProcedure
+        .input(z.object({
+            userId: z.string(),
+            nickname: z.string(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.user.update({
+                where: { id: input.userId },
+                data: { nickname: input.nickname },
             });
         }),
 });

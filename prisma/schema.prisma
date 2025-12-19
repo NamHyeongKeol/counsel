@@ -10,26 +10,31 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String?        @unique
+  id            String             @id @default(cuid())
+  email         String?            @unique
   name          String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  nickname      String? // 댓글 작성시 표시될 닉네임
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   conversations Conversation[]
+  comments      CharacterComment[]
 }
 
 model Conversation {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String?
-  model     String    @default("gemini-3-flash-preview") // 선택된 AI 모델
-  isDeleted Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  characterId String?
+  character   Character? @relation(fields: [characterId], references: [id])
+  title       String?
+  model       String     @default("gemini-3-flash-preview") // 선택된 AI 모델
+  isDeleted   Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  messages    Message[]
 
   @@index([userId])
+  @@index([characterId])
 }
 
 model Message {
@@ -48,6 +53,7 @@ model Message {
   @@index([conversationId])
 }
 
+// [DEPRECATED] 기존 Prompt 테이블 - 마이그레이션 후 삭제 예정
 model Prompt {
   id            String   @id @default(cuid())
   key           String // "system", "greeting", "intimacy_modifier" 등
@@ -63,4 +69,54 @@ model Prompt {
   @@unique([key, locale, intimacyLevel])
   @@index([key, locale])
   @@index([isActive])
+}
+
+// ======================================
+// 캐릭터 (상담사) 시스템
+// ======================================
+
+model Character {
+  id            String             @id @default(cuid())
+  name          String // 캐릭터 이름 (예: "언니")
+  slug          String             @unique // URL-friendly ID
+  tagline       String? // 한줄 소개/대사
+  introduction  String             @db.Text // 상담사 소개 문구
+  systemPrompt  String             @db.Text // AI 시스템 프롬프트
+  greeting      String             @db.Text // 인트로 메시지
+  isActive      Boolean            @default(true) // 관리자 활성화 여부
+  isPublic      Boolean            @default(false) // 유저에게 공개 여부
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  images        CharacterImage[]
+  comments      CharacterComment[]
+  conversations Conversation[]
+
+  @@index([isActive])
+  @@index([isPublic])
+}
+
+model CharacterImage {
+  id          String    @id @default(cuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  imageUrl    String // 이미지 URL
+  order       Int       @default(0) // 정렬 순서
+  createdAt   DateTime  @default(now())
+
+  @@index([characterId])
+}
+
+model CharacterComment {
+  id          String    @id @default(cuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content     String    @db.Text
+  isPrivate   Boolean   @default(false) // 비공개 댓글
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([characterId])
+  @@index([userId])
 }

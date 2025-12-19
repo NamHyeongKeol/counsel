@@ -3,6 +3,8 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { AI_MODELS, CURRENT_EXCHANGE_RATE } from "@/lib/ai/constants";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
 interface MessageBubbleProps {
     role: "user" | "assistant";
@@ -18,6 +20,9 @@ interface MessageBubbleProps {
     onSelect?: () => void;
     onDelete?: () => void;
     canDelete?: boolean;
+    onAvatarClick?: () => void;
+    characterImage?: string | null;
+    characterName?: string;
 }
 
 // 통통 튀는 로딩 애니메이션 컴포넌트
@@ -47,7 +52,10 @@ export function MessageBubble({
     isSelected,
     onSelect,
     onDelete,
-    canDelete
+    canDelete,
+    onAvatarClick,
+    characterImage,
+    characterName = "언니",
 }: MessageBubbleProps) {
     const isUser = role === "user";
 
@@ -96,11 +104,28 @@ export function MessageBubble({
 
             {/* 아바타 (AI 메시지만, 선택 모드 아닐 때) */}
             {!isUser && !selectMode && (
-                <Avatar className="h-10 w-10 shrink-0 bg-gradient-to-br from-pink-400 to-purple-500">
-                    <AvatarFallback className="bg-transparent text-white text-sm font-bold">
-                        언니
-                    </AvatarFallback>
-                </Avatar>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onAvatarClick?.();
+                    }}
+                    className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    disabled={!onAvatarClick}
+                >
+                    {characterImage ? (
+                        <img
+                            src={characterImage}
+                            alt={characterName}
+                            className="h-10 w-10 rounded-full object-cover"
+                        />
+                    ) : (
+                        <Avatar className="h-10 w-10 shrink-0 bg-gradient-to-br from-pink-400 to-purple-500">
+                            <AvatarFallback className="bg-transparent text-white text-sm font-bold">
+                                {characterName.slice(0, 2)}
+                            </AvatarFallback>
+                        </Avatar>
+                    )}
+                </button>
             )}
 
             {/* 메시지 버블 */}
@@ -118,7 +143,26 @@ export function MessageBubble({
                         <LoadingDots />
                     </p>
                 ) : (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
+                    <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none prose-p:my-1 prose-p:leading-relaxed prose-strong:text-pink-300 prose-em:text-purple-300 prose-a:text-blue-400 prose-a:underline prose-a:underline-offset-2 hover:prose-a:text-blue-300">
+                        <ReactMarkdown
+                            remarkPlugins={[remarkBreaks]}
+                            components={{
+                                a: ({ href, children }) => (
+                                    <a
+                                        href={href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {children}
+                                    </a>
+                                ),
+                                p: ({ children }) => <p>{children}</p>,
+                            }}
+                        >
+                            {content}
+                        </ReactMarkdown>
+                    </div>
                 )}
                 {createdAt && !isLoading && (
                     <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
