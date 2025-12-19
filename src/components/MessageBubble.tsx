@@ -200,21 +200,21 @@ export function MessageBubble({
                                         </svg>
                                     </button>
                                 )}
-                                {/* 좋아요 */}
+                                {/* 좋아요 - 따봉 (엄지 올림) */}
                                 {onLike && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onLike(); }}
                                         className={cn(
                                             "p-2 rounded-lg hover:bg-white/10 transition-colors group",
-                                            isLiked && "bg-pink-500/20"
+                                            isLiked && "bg-green-500/20"
                                         )}
                                         title="좋아요"
                                     >
                                         <svg className={cn(
                                             "w-4 h-4 transition-colors",
-                                            isLiked ? "text-pink-400 fill-pink-400" : "text-white/40 group-hover:text-white/70"
-                                        )} fill={isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                            isLiked ? "text-green-400" : "text-white/40 group-hover:text-white/70"
+                                        )} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                                         </svg>
                                     </button>
                                 )}
@@ -236,7 +236,7 @@ export function MessageBubble({
                                         </svg>
                                     </button>
                                 )}
-                                {/* 피드백 */}
+                                {/* 피드백/신고 - 깃발 아이콘 */}
                                 {onFeedback && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onFeedback(); }}
@@ -244,11 +244,11 @@ export function MessageBubble({
                                         title="피드백"
                                     >
                                         <svg className="w-4 h-4 text-white/40 group-hover:text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
                                         </svg>
                                     </button>
                                 )}
-                                {/* 수정 */}
+                                {/* 수정 - 연필 아이콘 */}
                                 {onEdit && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onEdit(); }}
@@ -256,7 +256,7 @@ export function MessageBubble({
                                         title="수정"
                                     >
                                         <svg className="w-4 h-4 text-white/40 group-hover:text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                         </svg>
                                     </button>
                                 )}

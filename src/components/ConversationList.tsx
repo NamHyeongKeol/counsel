@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { CharacterSelectModal } from "@/components/CharacterSelectModal";
 import ReactMarkdown from "react-markdown";
 
 interface Conversation {
@@ -31,6 +32,7 @@ export function ConversationList({
 }: ConversationListProps) {
     const router = useRouter();
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+    const [showCharacterSelect, setShowCharacterSelect] = useState(false);
 
     // useMutation 대신 useQuery 사용
     const getConversations = trpc.getConversations.useQuery(
@@ -44,16 +46,18 @@ export function ConversationList({
     const createConversation = trpc.createConversation.useMutation();
     const deleteConversation = trpc.deleteConversation.useMutation();
 
-    // 기본 캐릭터 조회
-    const getActiveCharacters = trpc.getActiveCharacters.useQuery();
-    const defaultCharacter = getActiveCharacters.data?.[0];
+    const handleNewConversation = () => {
+        setShowCharacterSelect(true);
+    };
 
-    const handleNewConversation = async () => {
+    const handleCharacterSelect = async (characterId: string) => {
         if (!userId) return;
+
+        setShowCharacterSelect(false);
 
         const conversation = await createConversation.mutateAsync({
             userId,
-            characterId: defaultCharacter?.id,
+            characterId,
         });
 
         // 목록 새로고침
@@ -224,6 +228,14 @@ export function ConversationList({
                 onCancel={() => setDeleteTarget(null)}
                 confirmText="삭제"
                 danger
+            />
+
+            {/* 캐릭터 선택 모달 */}
+            <CharacterSelectModal
+                isOpen={showCharacterSelect}
+                onClose={() => setShowCharacterSelect(false)}
+                onSelect={handleCharacterSelect}
+                userId={userId}
             />
         </div>
     );
