@@ -3,46 +3,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/db";
 import { AIModelId, calculateCost } from "@/lib/ai/constants";
 import { streamChat } from "@/lib/ai/provider";
-import {
-    DEFAULT_SYSTEM_PROMPT,
-    DEFAULT_INTIMACY_MODIFIERS,
-    PROMPT_KEYS
-} from "@/lib/prompts/defaults";
 
 interface Message {
     role: "user" | "assistant";
     content: string;
-}
-
-// DB에서 시스템 프롬프트 조회
-async function getSystemPromptFromDB(intimacyLevel: number = 1): Promise<string> {
-    try {
-        const systemPrompt = await prisma.prompt.findFirst({
-            where: {
-                key: PROMPT_KEYS.SYSTEM,
-                isActive: true,
-                intimacyLevel: null,
-                locale: "ko",
-            },
-        });
-
-        const intimacyModifier = await prisma.prompt.findFirst({
-            where: {
-                key: PROMPT_KEYS.INTIMACY_MODIFIER,
-                isActive: true,
-                intimacyLevel,
-                locale: "ko",
-            },
-        });
-
-        const basePrompt = systemPrompt?.content || DEFAULT_SYSTEM_PROMPT;
-        const modifier = intimacyModifier?.content || DEFAULT_INTIMACY_MODIFIERS[intimacyLevel] || "";
-
-        return `${basePrompt}\n\n${modifier}`;
-    } catch (error) {
-        console.error("DB 프롬프트 조회 실패, 기본값 사용:", error);
-        return `${DEFAULT_SYSTEM_PROMPT}\n\n${DEFAULT_INTIMACY_MODIFIERS[intimacyLevel] || ""}`;
-    }
 }
 
 // 대화 제목 생성 (AI에게 요약 요청)
@@ -124,15 +88,13 @@ export async function POST(request: NextRequest) {
             ];
         }
 
-        // 시스템 프롬프트 조회 (인트로 메시지 친밀도는 기본 1)
-        const systemPrompt = await getSystemPromptFromDB(1);
-
-        // 대화방 정보 조회 (모델 설정을 위해)
+        // 대화방 정보 조회 (모델 설정 + 캐릭터 systemPrompt)
         const conversation = await prisma.conversation.findUnique({
             where: { id: conversationId },
-            select: { model: true }
+            include: { character: true }
         });
 
+        const systemPrompt = conversation?.character?.systemPrompt || "당신은 친절한 상담사입니다.";
         const modelId = (conversation?.model as AIModelId) || "gemini-3-flash-preview";
 
         // 전체 응답 수집 (DB 저장용)

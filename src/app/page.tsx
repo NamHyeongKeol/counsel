@@ -56,13 +56,16 @@ export default function Home() {
 
     if (conversations.length > 0) {
       router.replace(`/chat/${conversations[0].id}`);
-    } else {
-      // 기본 캐릭터 ID 전달
+    } else if (defaultCharacter) {
+      // 기본 캐릭터로 대화 생성
       const conversation = await createConversation.mutateAsync({
         userId,
-        characterId: defaultCharacter?.id,
+        characterId: defaultCharacter.id,
       });
       router.replace(`/chat/${conversation.id}`);
+    } else {
+      // 캐릭터가 없으면 explore 페이지로
+      router.replace("/explore");
     }
   };
 

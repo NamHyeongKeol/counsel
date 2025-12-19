@@ -354,11 +354,11 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
 
     // 새 대화 시작
     const handleNewConversation = async () => {
-        if (!userId) return;
+        if (!userId || !character) return;
         setMenuOpen(false);
         const conversation = await createConversation.mutateAsync({
             userId,
-            characterId: character?.id,
+            characterId: character.id,
         });
         router.push(`/chat/${conversation.id}`);
     };

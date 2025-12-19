@@ -32,7 +32,7 @@ export interface ChatOptions {
     messages: Message[];
     modelId?: AIModelId;
     provider?: AIProvider;
-    intimacyLevel?: number;
+    systemPrompt?: string;
 }
 
 export interface ChatResult {

@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { router, publicProcedure } from "./init";
 import { chat } from "@/lib/ai/provider";
-import { getGreeting } from "@/lib/prompts";
 
 export const appRouter = router({
     // 대화 목록 조회 (삭제되지 않은 대화방만)
@@ -57,45 +56,34 @@ export const appRouter = router({
     createConversation: publicProcedure
         .input(z.object({
             userId: z.string(),
+            characterId: z.string(), // 필수!
             title: z.string().optional(),
-            characterId: z.string().optional(),
-            greeting: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            // 캐릭터가 있으면 해당 캐릭터의 greeting 사용
-            let greetingContent = input.greeting;
-            let characterName = "언니";
+            // 캐릭터 조회
+            const character = await ctx.prisma.character.findUnique({
+                where: { id: input.characterId },
+            });
 
-            if (input.characterId) {
-                const character = await ctx.prisma.character.findUnique({
-                    where: { id: input.characterId },
-                });
-                if (character) {
-                    greetingContent = greetingContent || character.greeting;
-                    characterName = character.name;
-                }
-            }
-
-            // greeting이 여전히 없으면 기본 인사말 사용
-            if (!greetingContent) {
-                greetingContent = await getGreeting(1);
+            if (!character) {
+                throw new Error("캐릭터를 찾을 수 없습니다.");
             }
 
             const conversation = await ctx.prisma.conversation.create({
                 data: {
                     userId: input.userId,
-                    title: input.title || `${characterName}와의 대화`,
                     characterId: input.characterId,
+                    title: input.title || `${character.name}와의 대화`,
                     model: "gemini-3-flash-preview",
                 },
             });
 
-            // 인트로 메시지 자동 추가
+            // 인트로 메시지 자동 추가 (캐릭터의 greeting 사용)
             await ctx.prisma.message.create({
                 data: {
                     conversationId: conversation.id,
                     role: "assistant",
-                    content: greetingContent,
+                    content: character.greeting,
                 },
             });
 
@@ -225,19 +213,27 @@ export const appRouter = router({
             });
         }),
 
-    // 인트로(인사) 메시지 생성
+    // 인트로(인사) 메시지 생성 (대화방에 연결된 캐릭터의 greeting 사용)
     createGreeting: publicProcedure
         .input(z.object({
             conversationId: z.string(),
-            content: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const content = input.content || await getGreeting(1);
+            // 대화방에 연결된 캐릭터 조회
+            const conversation = await ctx.prisma.conversation.findUnique({
+                where: { id: input.conversationId },
+                include: { character: true },
+            });
+
+            if (!conversation?.character) {
+                throw new Error("대화방에 연결된 캐릭터가 없습니다.");
+            }
+
             return ctx.prisma.message.create({
                 data: {
                     conversationId: input.conversationId,
                     role: "assistant",
-                    content: content,
+                    content: conversation.character.greeting,
                 },
             });
         }),
@@ -262,62 +258,6 @@ export const appRouter = router({
             return user;
         }),
 
-    // ============================================
-    // 프롬프트 관리 API (Admin)
-    // ============================================
-
-    // 모든 프롬프트 조회
-    getPrompts: publicProcedure
-        .query(async ({ ctx }) => {
-            return ctx.prisma.prompt.findMany({
-                orderBy: [
-                    { key: "asc" },
-                    { intimacyLevel: "asc" },
-                    { locale: "asc" },
-                ],
-            });
-        }),
-
-    // 프롬프트 생성
-    createPrompt: publicProcedure
-        .input(z.object({
-            key: z.string(),
-            content: z.string(),
-            locale: z.string().default("ko"),
-            intimacyLevel: z.number().nullable().optional(),
-            description: z.string().nullable().optional(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            return ctx.prisma.prompt.create({
-                data: {
-                    key: input.key,
-                    content: input.content,
-                    locale: input.locale,
-                    intimacyLevel: input.intimacyLevel,
-                    description: input.description,
-                },
-            });
-        }),
-
-    // 프롬프트 수정
-    updatePrompt: publicProcedure
-        .input(z.object({
-            id: z.string(),
-            content: z.string().optional(),
-            description: z.string().nullable().optional(),
-            isActive: z.boolean().optional(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            return ctx.prisma.prompt.update({
-                where: { id: input.id },
-                data: {
-                    ...(input.content !== undefined && { content: input.content }),
-                    ...(input.description !== undefined && { description: input.description }),
-                    ...(input.isActive !== undefined && { isActive: input.isActive }),
-                    version: { increment: 1 },
-                },
-            });
-        }),
 
     // 대화방 모델 설정 업데이트
     updateConversationModel: publicProcedure

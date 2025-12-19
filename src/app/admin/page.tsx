@@ -38,10 +38,8 @@ export default function AdminPage() {
         greeting: "",
         imageUrls: [""],
     });
-    const [activeTab, setActiveTab] = useState<"characters" | "prompts">("characters");
 
     const getCharacters = trpc.getCharacters.useQuery();
-    const getPrompts = trpc.getPrompts.useQuery();
     const createCharacter = trpc.createCharacter.useMutation();
     const updateCharacter = trpc.updateCharacter.useMutation();
     const deleteCharacter = trpc.deleteCharacter.useMutation();
@@ -193,205 +191,170 @@ export default function AdminPage() {
             <div className="max-w-6xl mx-auto">
                 <header className="flex items-center justify-between mb-8">
                     <h1 className="text-2xl font-bold">🔧 Admin 관리</h1>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setActiveTab("characters")}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === "characters" ? "bg-pink-600" : "bg-gray-700 hover:bg-gray-600"
-                                }`}
-                        >
-                            캐릭터 관리
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("prompts")}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === "prompts" ? "bg-pink-600" : "bg-gray-700 hover:bg-gray-600"
-                                }`}
-                        >
-                            프롬프트 (Legacy)
-                        </button>
-                    </div>
                 </header>
 
-                {activeTab === "characters" && (
-                    <>
-                        <div className="flex justify-end mb-4">
-                            <button
-                                onClick={() => setShowAddForm(!showAddForm)}
-                                className="px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg text-sm font-medium"
-                            >
-                                {showAddForm ? "취소" : "+ 새 캐릭터"}
-                            </button>
+                {/* 캐릭터 관리 */}
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={() => setShowAddForm(!showAddForm)}
+                        className="px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg text-sm font-medium"
+                    >
+                        {showAddForm ? "취소" : "+ 새 캐릭터"}
+                    </button>
+                </div>
+
+                {/* 새 캐릭터 추가 폼 */}
+                {showAddForm && (
+                    <CharacterForm
+                        data={newCharacter}
+                        onChange={setNewCharacter}
+                        onSubmit={handleAddCharacter}
+                        onCancel={() => setShowAddForm(false)}
+                        isPending={createCharacter.isPending}
+                        isNew={true}
+                        addImageUrlField={addImageUrlField}
+                        updateImageUrl={updateImageUrl}
+                        removeImageUrl={removeImageUrl}
+                    />
+                )}
+
+                {/* 캐릭터 목록 */}
+                <div className="space-y-4">
+                    {getCharacters.isLoading && (
+                        <div className="text-center text-gray-400 py-8">로딩 중...</div>
+                    )}
+
+                    {characters.length === 0 && !getCharacters.isLoading && (
+                        <div className="text-center text-gray-400 py-8">
+                            등록된 캐릭터가 없습니다.
                         </div>
+                    )}
 
-                        {/* 새 캐릭터 추가 폼 */}
-                        {showAddForm && (
-                            <CharacterForm
-                                data={newCharacter}
-                                onChange={setNewCharacter}
-                                onSubmit={handleAddCharacter}
-                                onCancel={() => setShowAddForm(false)}
-                                isPending={createCharacter.isPending}
-                                isNew={true}
-                                addImageUrlField={addImageUrlField}
-                                updateImageUrl={updateImageUrl}
-                                removeImageUrl={removeImageUrl}
-                            />
-                        )}
-
-                        {/* 캐릭터 목록 */}
-                        <div className="space-y-4">
-                            {getCharacters.isLoading && (
-                                <div className="text-center text-gray-400 py-8">로딩 중...</div>
-                            )}
-
-                            {characters.length === 0 && !getCharacters.isLoading && (
-                                <div className="text-center text-gray-400 py-8">
-                                    등록된 캐릭터가 없습니다.
+                    {characters.map((character) => (
+                        <div
+                            key={character.id}
+                            className={`bg-gray-800 rounded-lg p-4 border ${character.isActive ? "border-gray-700" : "border-red-900/50 opacity-60"
+                                }`}
+                        >
+                            <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                    {/* 프로필 이미지 썸네일 */}
+                                    {character.images[0] && (
+                                        <img
+                                            src={character.images[0].imageUrl}
+                                            alt={character.name}
+                                            className="w-12 h-12 rounded-full object-cover"
+                                        />
+                                    )}
+                                    <div>
+                                        <span className="font-bold text-pink-400 text-lg">
+                                            {character.name}
+                                        </span>
+                                        <span className="ml-2 text-gray-500 text-sm">
+                                            @{character.slug}
+                                        </span>
+                                        {character.tagline && (
+                                            <p className="text-gray-400 text-sm mt-1">
+                                                "{character.tagline}"
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <span>💬 {character._count?.conversations || 0}</span>
+                                    <span>📝 {character._count?.comments || 0}</span>
+                                    <button
+                                        onClick={() => handleTogglePublic(character)}
+                                        className={`px-2 py-1 rounded text-xs ${(character as any).isPublic
+                                            ? "bg-blue-900/50 text-blue-400"
+                                            : "bg-gray-700 text-gray-400"
+                                            }`}
+                                    >
+                                        {(character as any).isPublic ? "공개" : "비공개"}
+                                    </button>
+                                    <button
+                                        onClick={() => handleToggleActive(character)}
+                                        className={`px-2 py-1 rounded text-xs ${character.isActive
+                                            ? "bg-green-900/50 text-green-400"
+                                            : "bg-red-900/50 text-red-400"
+                                            }`}
+                                    >
+                                        {character.isActive ? "활성" : "비활성"}
+                                    </button>
+                                </div>
+                            </div>
 
-                            {characters.map((character) => (
-                                <div
-                                    key={character.id}
-                                    className={`bg-gray-800 rounded-lg p-4 border ${character.isActive ? "border-gray-700" : "border-red-900/50 opacity-60"
-                                        }`}
-                                >
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="flex items-center gap-3">
-                                            {/* 프로필 이미지 썸네일 */}
-                                            {character.images[0] && (
+                            {editingId === character.id ? (
+                                <CharacterForm
+                                    data={editData}
+                                    onChange={setEditData}
+                                    onSubmit={handleSave}
+                                    onCancel={handleCancel}
+                                    isPending={updateCharacter.isPending}
+                                    isNew={false}
+                                    addImageUrlField={addImageUrlField}
+                                    updateImageUrl={updateImageUrl}
+                                    removeImageUrl={removeImageUrl}
+                                    existingImages={character.images}
+                                    onRemoveExistingImage={handleRemoveImage}
+                                    onAddExistingImage={(url) => handleAddImage(character.id, url)}
+                                />
+                            ) : (
+                                <div>
+                                    {/* 이미지 목록 */}
+                                    {character.images.length > 0 && (
+                                        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                                            {character.images.map((img, idx) => (
                                                 <img
-                                                    src={character.images[0].imageUrl}
-                                                    alt={character.name}
-                                                    className="w-12 h-12 rounded-full object-cover"
+                                                    key={img.id}
+                                                    src={img.imageUrl}
+                                                    alt={`${character.name} ${idx + 1}`}
+                                                    className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
                                                 />
-                                            )}
-                                            <div>
-                                                <span className="font-bold text-pink-400 text-lg">
-                                                    {character.name}
-                                                </span>
-                                                <span className="ml-2 text-gray-500 text-sm">
-                                                    @{character.slug}
-                                                </span>
-                                                {character.tagline && (
-                                                    <p className="text-gray-400 text-sm mt-1">
-                                                        "{character.tagline}"
-                                                    </p>
-                                                )}
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-4 text-sm">
+                                        <div>
+                                            <p className="text-gray-500 mb-1 font-medium">인트로 메시지</p>
+                                            <div className="text-gray-300 bg-gray-900/50 rounded p-3 max-h-40 overflow-y-auto whitespace-pre-wrap">
+                                                {character.greeting}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <span>💬 {character._count?.conversations || 0}</span>
-                                            <span>📝 {character._count?.comments || 0}</span>
-                                            <button
-                                                onClick={() => handleTogglePublic(character)}
-                                                className={`px-2 py-1 rounded text-xs ${(character as any).isPublic
-                                                    ? "bg-blue-900/50 text-blue-400"
-                                                    : "bg-gray-700 text-gray-400"
-                                                    }`}
-                                            >
-                                                {(character as any).isPublic ? "공개" : "비공개"}
-                                            </button>
-                                            <button
-                                                onClick={() => handleToggleActive(character)}
-                                                className={`px-2 py-1 rounded text-xs ${character.isActive
-                                                    ? "bg-green-900/50 text-green-400"
-                                                    : "bg-red-900/50 text-red-400"
-                                                    }`}
-                                            >
-                                                {character.isActive ? "활성" : "비활성"}
-                                            </button>
+                                        <div>
+                                            <p className="text-gray-500 mb-1 font-medium">소개</p>
+                                            <div className="text-gray-300 bg-gray-900/50 rounded p-3 max-h-40 overflow-y-auto whitespace-pre-wrap">
+                                                {character.introduction}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 mb-1 font-medium">시스템 프롬프트</p>
+                                            <div className="text-gray-300 bg-gray-900/50 rounded p-3 max-h-60 overflow-y-auto whitespace-pre-wrap font-mono text-xs">
+                                                {character.systemPrompt}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {editingId === character.id ? (
-                                        <CharacterForm
-                                            data={editData}
-                                            onChange={setEditData}
-                                            onSubmit={handleSave}
-                                            onCancel={handleCancel}
-                                            isPending={updateCharacter.isPending}
-                                            isNew={false}
-                                            addImageUrlField={addImageUrlField}
-                                            updateImageUrl={updateImageUrl}
-                                            removeImageUrl={removeImageUrl}
-                                            existingImages={character.images}
-                                            onRemoveExistingImage={handleRemoveImage}
-                                            onAddExistingImage={(url) => handleAddImage(character.id, url)}
-                                        />
-                                    ) : (
-                                        <div>
-                                            {/* 이미지 목록 */}
-                                            {character.images.length > 0 && (
-                                                <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                                                    {character.images.map((img, idx) => (
-                                                        <img
-                                                            key={img.id}
-                                                            src={img.imageUrl}
-                                                            alt={`${character.name} ${idx + 1}`}
-                                                            className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                                                        />
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            <div className="space-y-4 text-sm">
-                                                <div>
-                                                    <p className="text-gray-500 mb-1 font-medium">인트로 메시지</p>
-                                                    <div className="text-gray-300 bg-gray-900/50 rounded p-3 max-h-40 overflow-y-auto whitespace-pre-wrap">
-                                                        {character.greeting}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-gray-500 mb-1 font-medium">소개</p>
-                                                    <div className="text-gray-300 bg-gray-900/50 rounded p-3 max-h-40 overflow-y-auto whitespace-pre-wrap">
-                                                        {character.introduction}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-gray-500 mb-1 font-medium">시스템 프롬프트</p>
-                                                    <div className="text-gray-300 bg-gray-900/50 rounded p-3 max-h-60 overflow-y-auto whitespace-pre-wrap font-mono text-xs">
-                                                        {character.systemPrompt}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex gap-2 mt-4">
-                                                <button
-                                                    onClick={() => handleEdit(character)}
-                                                    className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
-                                                >
-                                                    수정
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteCharacter(character.id)}
-                                                    className="px-3 py-1.5 bg-red-900/50 hover:bg-red-800/50 text-red-400 rounded text-sm"
-                                                >
-                                                    삭제
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                    <div className="flex gap-2 mt-4">
+                                        <button
+                                            onClick={() => handleEdit(character)}
+                                            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                                        >
+                                            수정
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteCharacter(character.id)}
+                                            className="px-3 py-1.5 bg-red-900/50 hover:bg-red-800/50 text-red-400 rounded text-sm"
+                                        >
+                                            삭제
+                                        </button>
+                                    </div>
                                 </div>
-                            ))}
+                            )}
                         </div>
-                    </>
-                )}
-
-                {activeTab === "prompts" && (
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <p className="text-yellow-400 mb-4">
-                            ⚠️ 이 섹션은 기존 프롬프트 관리용입니다. 새로운 캐릭터 시스템으로 이전을 권장합니다.
-                        </p>
-                        <div className="space-y-4">
-                            {getPrompts.data?.map((prompt) => (
-                                <div key={prompt.id} className="bg-gray-900/50 rounded p-3">
-                                    <p className="font-mono text-pink-400">{prompt.key}</p>
-                                    <p className="text-gray-400 text-sm mt-1 line-clamp-2">{prompt.content}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                    ))}
+                </div>
             </div>
         </div>
     );

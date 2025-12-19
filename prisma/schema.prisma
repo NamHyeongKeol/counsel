@@ -55,24 +55,6 @@ model Message {
   @@index([conversationId])
 }
 
-// [DEPRECATED] 기존 Prompt 테이블 - 마이그레이션 후 삭제 예정
-model Prompt {
-  id            String   @id @default(cuid())
-  key           String // "system", "greeting", "intimacy_modifier" 등
-  locale        String   @default("ko") // i18n 지원
-  intimacyLevel Int? // null이면 공통, 1-5면 해당 레벨용
-  content       String   @db.Text
-  description   String? // 프롬프트 설명 (관리용)
-  version       Int      @default(1)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([key, locale, intimacyLevel])
-  @@index([key, locale])
-  @@index([isActive])
-}
-
 // ======================================
 // 캐릭터 (상담사) 시스템
 // ======================================
