@@ -40,6 +40,16 @@ export const appRouter = router({
         .query(async ({ ctx, input }) => {
             return ctx.prisma.conversation.findUnique({
                 where: { id: input.conversationId },
+                include: {
+                    character: {
+                        include: {
+                            images: {
+                                orderBy: { order: "asc" },
+                                take: 1,
+                            },
+                        },
+                    },
+                },
             });
         }),
 
@@ -48,21 +58,39 @@ export const appRouter = router({
         .input(z.object({
             userId: z.string(),
             title: z.string().optional(),
-            // greeting prop은 이제 클라이언트에서 주지 않아도 서버에서 DB 값을 찾아 넣음
+            characterId: z.string().optional(),
             greeting: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
+            // 캐릭터가 있으면 해당 캐릭터의 greeting 사용
+            let greetingContent = input.greeting;
+            let characterName = "언니";
+
+            if (input.characterId) {
+                const character = await ctx.prisma.character.findUnique({
+                    where: { id: input.characterId },
+                });
+                if (character) {
+                    greetingContent = greetingContent || character.greeting;
+                    characterName = character.name;
+                }
+            }
+
+            // greeting이 여전히 없으면 기본 인사말 사용
+            if (!greetingContent) {
+                greetingContent = await getGreeting(1);
+            }
+
             const conversation = await ctx.prisma.conversation.create({
                 data: {
                     userId: input.userId,
-                    title: input.title || "새 대화",
-                    model: "gemini-3-flash-preview", // 기본 모델 명시적 설정
+                    title: input.title || `${characterName}와의 대화`,
+                    characterId: input.characterId,
+                    model: "gemini-3-flash-preview",
                 },
             });
 
             // 인트로 메시지 자동 추가
-            const greetingContent = input.greeting || await getGreeting(1);
-
             await ctx.prisma.message.create({
                 data: {
                     conversationId: conversation.id,

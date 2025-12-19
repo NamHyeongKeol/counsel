@@ -23,6 +23,15 @@ interface MessageBubbleProps {
     onAvatarClick?: () => void;
     characterImage?: string | null;
     characterName?: string;
+    // 새로운 액션 버튼용 props
+    isLastAssistantMessage?: boolean;
+    onReroll?: () => void;
+    onLike?: () => void;
+    onDislike?: () => void;
+    onFeedback?: () => void;
+    onEdit?: () => void;
+    isLiked?: boolean;
+    isDisliked?: boolean;
 }
 
 // 통통 튀는 로딩 애니메이션 컴포넌트
@@ -56,6 +65,14 @@ export function MessageBubble({
     onAvatarClick,
     characterImage,
     characterName = "언니",
+    isLastAssistantMessage,
+    onReroll,
+    onLike,
+    onDislike,
+    onFeedback,
+    onEdit,
+    isLiked,
+    isDisliked,
 }: MessageBubbleProps) {
     const isUser = role === "user";
 
@@ -139,46 +156,125 @@ export function MessageBubble({
                     </div>
                 )}
                 {createdAt && !isLoading && (
-                    <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
-                        {/* Assistant 메시지만 모델명, 토큰, 비용 표시 */}
-                        {!isUser && model && (
-                            <span className="text-[10px] text-white/40 flex gap-1 items-center">
-                                <span>{displayModelName}</span>
-                                {inputTokens != null && outputTokens != null && (
-                                    <span>· {inputTokens}/{outputTokens}</span>
-                                )}
-                                {cost != null && (
-                                    <span className="text-pink-400/60 font-medium">
-                                        · ${cost.toFixed(4)}
-                                        <span className="ml-1 text-[9px] opacity-70">
-                                            (약 {Math.round(cost * CURRENT_EXCHANGE_RATE)}원)
+                    <>
+                        <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
+                            {/* Assistant 메시지만 모델명, 토큰, 비용 표시 */}
+                            {!isUser && model && (
+                                <span className="text-[10px] text-white/40 flex gap-1 items-center">
+                                    <span>{displayModelName}</span>
+                                    {inputTokens != null && outputTokens != null && (
+                                        <span>· {inputTokens}/{outputTokens}</span>
+                                    )}
+                                    {cost != null && (
+                                        <span className="text-pink-400/60 font-medium">
+                                            · ${cost.toFixed(4)}
+                                            <span className="ml-1 text-[9px] opacity-70">
+                                                (약 {Math.round(cost * CURRENT_EXCHANGE_RATE)}원)
+                                            </span>
                                         </span>
-                                    </span>
-                                )}
+                                    )}
+                                </span>
+                            )}
+                            <span className={cn(
+                                "text-[10px]",
+                                isUser ? "text-white/70" : "text-white/50"
+                            )}>
+                                {new Date(createdAt).toLocaleTimeString("ko-KR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                })}
                             </span>
-                        )}
-                        <span className={cn(
-                            "text-[10px]",
-                            isUser ? "text-white/70" : "text-white/50"
-                        )}>
-                            {new Date(createdAt).toLocaleTimeString("ko-KR", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                            })}
-                        </span>
-                        {!selectMode && canDelete && (
-                            <button
-                                onClick={handleDelete}
-                                className={cn(
-                                    "text-[10px] hover:text-red-400 transition-colors",
-                                    isUser ? "text-white/50" : "text-white/40"
+                        </div>
+                        {/* 액션 버튼 줄 */}
+                        {!selectMode && (
+                            <div className="flex items-center gap-1 mt-2 pt-2 border-t border-white/5">
+                                {/* 리롤 - assistant 메시지의 마지막 메시지에만 표시 */}
+                                {!isUser && isLastAssistantMessage && onReroll && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onReroll(); }}
+                                        className="p-2 rounded-lg hover:bg-white/10 transition-colors group"
+                                        title="다시 생성"
+                                    >
+                                        <svg className="w-4 h-4 text-white/40 group-hover:text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </button>
                                 )}
-                                title="삭제"
-                            >
-                                삭제
-                            </button>
+                                {/* 좋아요 */}
+                                {onLike && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onLike(); }}
+                                        className={cn(
+                                            "p-2 rounded-lg hover:bg-white/10 transition-colors group",
+                                            isLiked && "bg-pink-500/20"
+                                        )}
+                                        title="좋아요"
+                                    >
+                                        <svg className={cn(
+                                            "w-4 h-4 transition-colors",
+                                            isLiked ? "text-pink-400 fill-pink-400" : "text-white/40 group-hover:text-white/70"
+                                        )} fill={isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                    </button>
+                                )}
+                                {/* 싫어요 */}
+                                {onDislike && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onDislike(); }}
+                                        className={cn(
+                                            "p-2 rounded-lg hover:bg-white/10 transition-colors group",
+                                            isDisliked && "bg-gray-500/20"
+                                        )}
+                                        title="싫어요"
+                                    >
+                                        <svg className={cn(
+                                            "w-4 h-4 transition-colors",
+                                            isDisliked ? "text-gray-400" : "text-white/40 group-hover:text-white/70"
+                                        )} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                        </svg>
+                                    </button>
+                                )}
+                                {/* 피드백 */}
+                                {onFeedback && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onFeedback(); }}
+                                        className="p-2 rounded-lg hover:bg-white/10 transition-colors group"
+                                        title="피드백"
+                                    >
+                                        <svg className="w-4 h-4 text-white/40 group-hover:text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                    </button>
+                                )}
+                                {/* 수정 */}
+                                {onEdit && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                                        className="p-2 rounded-lg hover:bg-white/10 transition-colors group"
+                                        title="수정"
+                                    >
+                                        <svg className="w-4 h-4 text-white/40 group-hover:text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                )}
+                                {/* 삭제 */}
+                                {canDelete && onDelete && (
+                                    <button
+                                        onClick={handleDelete}
+                                        className="p-2 rounded-lg hover:bg-red-500/20 transition-colors group"
+                                        title="삭제"
+                                    >
+                                        <svg className="w-4 h-4 text-white/40 group-hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
                         )}
-                    </div>
+                    </>
                 )}
             </div>
         </div>

@@ -73,11 +73,14 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
         { enabled: !!conversationId }
     );
 
-    // 기본 캐릭터 조회 (첫 번째 활성 캐릭터 사용)
+    // 기본 캐릭터 조회 (fallback용)
     const getActiveCharacters = trpc.getActiveCharacters.useQuery();
 
-    // 현재 캐릭터 정보
-    const character = getActiveCharacters.data?.[0];
+    // 현재 캐릭터 정보 (대화방에 연결된 캐릭터 우선, 없으면 첫 번째 활성 캐릭터)
+    const conversationCharacter = getConversation.data?.character;
+    const fallbackCharacter = getActiveCharacters.data?.[0];
+    const character = conversationCharacter || fallbackCharacter;
+
     const characterImage = character?.images?.[0]?.imageUrl || null;
     const characterName = character?.name || "언니";
 
@@ -385,7 +388,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                             )}
                         </button>
                         <div>
-                            <h1 className="text-white font-semibold">{characterName}야</h1>
+                            <h1 className="text-white font-semibold">{characterName}</h1>
                             <p className="text-white/60 text-xs">
                                 {getConversation.data?.model
                                     ? AI_MODELS[getConversation.data.model as AIModelId]?.name || "AI"
@@ -495,27 +498,55 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                 {/* 채팅 영역 */}
                 <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
                     <div className="flex flex-col gap-4 pb-4 min-h-full">
-                        {messages.map((message) => (
-                            <MessageBubble
-                                key={message.id}
-                                role={message.role}
-                                content={message.isLoading ? "" : message.content}
-                                createdAt={message.createdAt}
-                                isLoading={message.isLoading}
-                                model={message.model}
-                                inputTokens={message.inputTokens}
-                                outputTokens={message.outputTokens}
-                                cost={message.cost}
-                                selectMode={selectMode}
-                                isSelected={selectedIds.has(message.id)}
-                                onSelect={() => toggleSelect(message.id)}
-                                onDelete={() => requestDeleteMessage(message.id)}
-                                canDelete={!message.isLoading}
-                                onAvatarClick={handleOpenProfile}
-                                characterImage={characterImage}
-                                characterName={characterName}
-                            />
-                        ))}
+                        {(() => {
+                            // 마지막 assistant 메시지 ID 찾기
+                            const lastAssistantMessage = [...messages].reverse().find(m => m.role === "assistant" && !m.isLoading);
+                            const lastAssistantMessageId = lastAssistantMessage?.id;
+
+                            return messages.map((message) => (
+                                <MessageBubble
+                                    key={message.id}
+                                    role={message.role}
+                                    content={message.isLoading ? "" : message.content}
+                                    createdAt={message.createdAt}
+                                    isLoading={message.isLoading}
+                                    model={message.model}
+                                    inputTokens={message.inputTokens}
+                                    outputTokens={message.outputTokens}
+                                    cost={message.cost}
+                                    selectMode={selectMode}
+                                    isSelected={selectedIds.has(message.id)}
+                                    onSelect={() => toggleSelect(message.id)}
+                                    onDelete={() => requestDeleteMessage(message.id)}
+                                    canDelete={!message.isLoading}
+                                    onAvatarClick={handleOpenProfile}
+                                    characterImage={characterImage}
+                                    characterName={characterName}
+                                    // 새 액션 버튼 props
+                                    isLastAssistantMessage={message.id === lastAssistantMessageId}
+                                    onReroll={() => {
+                                        // TODO: 리롤 기능 구현
+                                        console.log("Reroll message:", message.id);
+                                    }}
+                                    onLike={() => {
+                                        // TODO: 좋아요 기능 구현
+                                        console.log("Like message:", message.id);
+                                    }}
+                                    onDislike={() => {
+                                        // TODO: 싫어요 기능 구현
+                                        console.log("Dislike message:", message.id);
+                                    }}
+                                    onFeedback={() => {
+                                        // TODO: 피드백 기능 구현
+                                        console.log("Feedback message:", message.id);
+                                    }}
+                                    onEdit={() => {
+                                        // TODO: 수정 기능 구현
+                                        console.log("Edit message:", message.id);
+                                    }}
+                                />
+                            ));
+                        })()}
                     </div>
                 </div>
 
