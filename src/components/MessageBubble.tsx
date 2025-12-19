@@ -102,36 +102,10 @@ export function MessageBubble({
                 </div>
             )}
 
-            {/* 아바타 (AI 메시지만, 선택 모드 아닐 때) */}
-            {!isUser && !selectMode && (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onAvatarClick?.();
-                    }}
-                    className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                    disabled={!onAvatarClick}
-                >
-                    {characterImage ? (
-                        <img
-                            src={characterImage}
-                            alt={characterName}
-                            className="h-10 w-10 rounded-full object-cover"
-                        />
-                    ) : (
-                        <Avatar className="h-10 w-10 shrink-0 bg-gradient-to-br from-pink-400 to-purple-500">
-                            <AvatarFallback className="bg-transparent text-white text-sm font-bold">
-                                {characterName.slice(0, 2)}
-                            </AvatarFallback>
-                        </Avatar>
-                    )}
-                </button>
-            )}
-
             {/* 메시지 버블 */}
             <div
                 className={cn(
-                    "rounded-2xl px-4 py-3 break-words max-w-[80%]",
+                    "rounded-2xl px-4 py-3 break-words max-w-[85%]",
                     isUser
                         ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-tr-sm"
                         : "bg-white/10 backdrop-blur-sm text-white rounded-tl-sm border border-white/10",
