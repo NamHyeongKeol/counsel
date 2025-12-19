@@ -21,12 +21,6 @@ export default function Home() {
 
   const getOrCreateUser = trpc.getOrCreateUser.useMutation();
   const updateUserProfile = trpc.updateUserProfile.useMutation();
-  const createConversation = trpc.createConversation.useMutation();
-  const utils = trpc.useUtils();
-
-  // 첫 번째 활성 캐릭터 가져오기
-  const getActiveCharacters = trpc.getActiveCharacters.useQuery();
-  const defaultCharacter = getActiveCharacters.data?.[0];
 
   useEffect(() => {
     async function init() {
@@ -45,29 +39,11 @@ export default function Home() {
         return;
       }
 
-      // 기존 유저는 바로 대화 페이지로 이동
-      await navigateToChat(fetchedUser.id);
+      // 기존 유저는 /explore 페이지로 이동
+      router.replace("/explore");
     }
     init();
   }, []);
-
-  const navigateToChat = async (userId: string) => {
-    const conversations = await utils.getConversations.fetch({ userId });
-
-    if (conversations.length > 0) {
-      router.replace(`/chat/${conversations[0].id}`);
-    } else if (defaultCharacter) {
-      // 기본 캐릭터로 대화 생성
-      const conversation = await createConversation.mutateAsync({
-        userId,
-        characterId: defaultCharacter.id,
-      });
-      router.replace(`/chat/${conversation.id}`);
-    } else {
-      // 캐릭터가 없으면 explore 페이지로
-      router.replace("/explore");
-    }
-  };
 
   const handleOnboardingComplete = async (data: {
     name: string;
@@ -82,7 +58,7 @@ export default function Home() {
     });
 
     setShowOnboarding(false);
-    await navigateToChat(user.id);
+    router.replace("/explore");
   };
 
   return (
