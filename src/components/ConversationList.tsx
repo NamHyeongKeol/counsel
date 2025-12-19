@@ -115,11 +115,11 @@ export function ConversationList({
     return (
         <div className="flex flex-col h-full bg-gradient-to-b from-purple-900 via-purple-800 to-pink-900">
             {/* 헤더 */}
-            <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-md border-b border-white/10">
-                <h1 className="text-white font-semibold">대화 목록</h1>
+            <header className="relative flex items-center justify-center h-14 border-b border-white/10 shrink-0">
+                <h1 className="text-lg font-bold text-white">대화 목록</h1>
                 <button
                     onClick={handleNewConversation}
-                    className="p-2 text-white/70 hover:text-white"
+                    className="absolute right-4 p-2 text-white/70 hover:text-white"
                     disabled={createConversation.isPending}
                 >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
