@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ConversationList } from "@/components/ConversationList";
 import { trpc } from "@/lib/trpc/client";
 
 export default function ChatListPage() {
-    const router = useRouter();
     const [userId, setUserId] = useState<string | null>(null);
     const getOrCreateUser = trpc.getOrCreateUser.useMutation();
 
@@ -36,7 +34,6 @@ export default function ChatListPage() {
             <div className="flex flex-col h-full w-full max-w-[390px] mx-auto">
                 <ConversationList
                     userId={userId}
-                    onBack={() => router.push("/")}
                 />
             </div>
         </div>
