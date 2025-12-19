@@ -152,19 +152,6 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
     // 시스템 프롬프트는 외부에서 전달받음 (캐릭터의 systemPrompt)
     const systemPrompt = options.systemPrompt || "당신은 친절한 상담사입니다.";
 
-    const technicalModel = getTechnicalModelName(modelId);
-
-    // 🔍 서버 로그: AI 요청 정보
-    console.log("\n" + "=".repeat(60));
-    console.log("🤖 [AI Request]");
-    console.log("=".repeat(60));
-    console.log(`📌 Provider: ${provider}`);
-    console.log(`📌 Model: ${technicalModel} (ID: ${modelId})`);
-    console.log(`📌 Messages count: ${options.messages.length}`);
-    console.log("\n📝 System Prompt (첫 200자):");
-    console.log(systemPrompt.slice(0, 200) + "...\n");
-    console.log("=".repeat(60) + "\n");
-
     const startTime = Date.now();
 
     try {

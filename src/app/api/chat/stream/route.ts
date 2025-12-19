@@ -88,13 +88,34 @@ export async function POST(request: NextRequest) {
             ];
         }
 
-        // 대화방 정보 조회 (모델 설정 + 캐릭터 systemPrompt)
+        // 대화방 정보 조회 (모델 설정 + 캐릭터 systemPrompt + 유저 정보)
         const conversation = await prisma.conversation.findUnique({
             where: { id: conversationId },
-            include: { character: true }
+            include: {
+                character: true,
+                user: true, // 유저 정보도 조회
+            }
         });
 
-        const systemPrompt = conversation?.character?.systemPrompt || "당신은 친절한 상담사입니다.";
+        // 캐릭터 기본 프롬프트
+        const basePrompt = conversation?.character?.systemPrompt || "당신은 친절한 상담사입니다.";
+
+        // 유저 정보 빌드
+        const user = conversation?.user;
+        let userContext = "";
+        if (user) {
+            const userInfo: string[] = [];
+            if (user.name) userInfo.push(`이름: ${user.name}`);
+            if (user.gender) userInfo.push(`성별: ${user.gender === "male" ? "남성" : "여성"}`);
+            if (user.age) userInfo.push(`나이: 만 ${user.age}세`);
+
+            if (userInfo.length > 0) {
+                userContext = `\n\n## 상담 대상자 정보\n${userInfo.join("\n")}`;
+            }
+        }
+
+        // 최종 시스템 프롬프트 = 캐릭터 프롬프트 + 유저 정보
+        const systemPrompt = basePrompt + userContext;
         const modelId = (conversation?.model as AIModelId) || "gemini-3-flash-preview";
 
         // 전체 응답 수집 (DB 저장용)
@@ -115,11 +136,12 @@ export async function POST(request: NextRequest) {
                         createdAt: userMessage.createdAt,
                     })}\n\n`));
 
-                    // AI Provider 스트리밍 호출
+                    // AI Provider 스트리밍 호출 (systemPrompt 전달!)
                     await streamChat(
                         {
                             messages: adjustedMessages,
                             modelId,
+                            systemPrompt, // 🔥 여기서 전달!
                         },
                         {
                             onChunk: (text) => {
