@@ -322,7 +322,7 @@ export default function AdminPage() {
                                         <div>
                                             {/* 이미지 목록 */}
                                             {character.images.length > 0 && (
-                                                <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                                                <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
                                                     {character.images.map((img, idx) => (
                                                         <img
                                                             key={img.id}
@@ -334,22 +334,28 @@ export default function AdminPage() {
                                                 </div>
                                             )}
 
-                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                            <div className="space-y-4 text-sm">
                                                 <div>
-                                                    <p className="text-gray-500 mb-1">인트로 메시지</p>
-                                                    <p className="text-gray-300 bg-gray-900/50 rounded p-2 max-h-24 overflow-y-auto">
-                                                        {character.greeting.slice(0, 100)}...
-                                                    </p>
+                                                    <p className="text-gray-500 mb-1 font-medium">인트로 메시지</p>
+                                                    <div className="text-gray-300 bg-gray-900/50 rounded p-3 max-h-40 overflow-y-auto whitespace-pre-wrap">
+                                                        {character.greeting}
+                                                    </div>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-500 mb-1">소개</p>
-                                                    <p className="text-gray-300 bg-gray-900/50 rounded p-2 max-h-24 overflow-y-auto">
-                                                        {character.introduction.slice(0, 100)}...
-                                                    </p>
+                                                    <p className="text-gray-500 mb-1 font-medium">소개</p>
+                                                    <div className="text-gray-300 bg-gray-900/50 rounded p-3 max-h-40 overflow-y-auto whitespace-pre-wrap">
+                                                        {character.introduction}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-500 mb-1 font-medium">시스템 프롬프트</p>
+                                                    <div className="text-gray-300 bg-gray-900/50 rounded p-3 max-h-60 overflow-y-auto whitespace-pre-wrap font-mono text-xs">
+                                                        {character.systemPrompt}
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="flex gap-2 mt-3">
+                                            <div className="flex gap-2 mt-4">
                                                 <button
                                                     onClick={() => handleEdit(character)}
                                                     className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
