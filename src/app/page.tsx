@@ -24,6 +24,10 @@ export default function Home() {
   const createConversation = trpc.createConversation.useMutation();
   const utils = trpc.useUtils();
 
+  // 첫 번째 활성 캐릭터 가져오기
+  const getActiveCharacters = trpc.getActiveCharacters.useQuery();
+  const defaultCharacter = getActiveCharacters.data?.[0];
+
   useEffect(() => {
     async function init() {
       let visitorId = localStorage.getItem("unni-visitor-id");
@@ -53,7 +57,11 @@ export default function Home() {
     if (conversations.length > 0) {
       router.replace(`/chat/${conversations[0].id}`);
     } else {
-      const conversation = await createConversation.mutateAsync({ userId });
+      // 기본 캐릭터 ID 전달
+      const conversation = await createConversation.mutateAsync({
+        userId,
+        characterId: defaultCharacter?.id,
+      });
       router.replace(`/chat/${conversation.id}`);
     }
   };

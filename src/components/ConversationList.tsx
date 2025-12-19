@@ -44,11 +44,16 @@ export function ConversationList({
     const createConversation = trpc.createConversation.useMutation();
     const deleteConversation = trpc.deleteConversation.useMutation();
 
+    // 기본 캐릭터 조회
+    const getActiveCharacters = trpc.getActiveCharacters.useQuery();
+    const defaultCharacter = getActiveCharacters.data?.[0];
+
     const handleNewConversation = async () => {
         if (!userId) return;
 
         const conversation = await createConversation.mutateAsync({
             userId,
+            characterId: defaultCharacter?.id,
         });
 
         // 목록 새로고침

@@ -358,6 +358,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
         setMenuOpen(false);
         const conversation = await createConversation.mutateAsync({
             userId,
+            characterId: character?.id,
         });
         router.push(`/chat/${conversation.id}`);
     };
