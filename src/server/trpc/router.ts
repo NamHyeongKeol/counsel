@@ -635,6 +635,24 @@ export const appRouter = router({
                 data: { nickname: input.nickname },
             });
         }),
+
+    // 유저 프로필 업데이트 (온보딩)
+    updateUserProfile: publicProcedure
+        .input(z.object({
+            userId: z.string(),
+            name: z.string().optional(),
+            gender: z.enum(["male", "female"]).optional(),
+            age: z.number().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const { userId, ...data } = input;
+            return ctx.prisma.user.update({
+                where: { id: userId },
+                data: Object.fromEntries(
+                    Object.entries(data).filter(([, v]) => v !== undefined)
+                ),
+            });
+        }),
 });
 
 export type AppRouter = typeof appRouter;
