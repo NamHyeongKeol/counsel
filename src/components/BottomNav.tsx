@@ -36,8 +36,8 @@ const tabs = [
 export function BottomNav() {
     const pathname = usePathname();
 
-    // 채팅방 안에서는 숨김
-    if (pathname.match(/^\/chat\/[^/]+$/)) {
+    // 채팅방 안이거나 admin 페이지에서는 숨김
+    if (pathname.match(/^\/chat\/[^/]+$/) || pathname.startsWith("/admin")) {
         return null;
     }
 
