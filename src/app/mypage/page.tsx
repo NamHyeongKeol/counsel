@@ -265,7 +265,7 @@ function EditProfileModal({
                         <button
                             onClick={handleSubmit}
                             disabled={!name.trim() || isSubmitting}
-                            className="flex-1 py-2.5 bg-black border border-brand text-brand text-sm font-medium rounded-lg hover:bg-brand/10 disabled:opacity-50"
+                            className="flex-1 py-2.5 bg-black border border-brand text-white text-sm font-medium rounded-lg hover:bg-brand/10 disabled:opacity-50"
                         >
                             {isSubmitting ? "저장 중..." : "저장하기"}
                         </button>
