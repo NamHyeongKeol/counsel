@@ -318,7 +318,7 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
 
                         {/* 대사 (tagline) */}
                         {character.tagline && (
-                            <div className="px-4 py-4 border-l-4 border-green-500 bg-gray-800/50 mx-4 mt-4 rounded-r">
+                            <div className="px-4 py-4 border-l-4 border-brand bg-white/5 mx-4 mt-4 rounded-r">
                                 <p className="text-white italic">"{character.tagline}"</p>
                             </div>
                         )}
@@ -384,20 +384,20 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
                             </div>
 
                             {/* 댓글 작성 */}
-                            <div className="space-y-2 pt-4 border-t border-gray-800">
+                            <div className="space-y-2 pt-4 border-t border-white/10">
                                 {showNicknameInput && (
                                     <input
                                         type="text"
                                         value={nickname}
                                         onChange={(e) => setNickname(e.target.value)}
                                         placeholder="닉네임을 입력하세요"
-                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-pink-500"
+                                        className="input-default"
                                     />
                                 )}
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setShowNicknameInput(!showNicknameInput)}
-                                        className="px-3 py-2 bg-gray-800 text-gray-400 rounded-lg text-sm hover:bg-gray-700"
+                                        className="px-3 py-2 bg-white/5 border border-white/10 text-white/60 rounded-lg text-sm hover:bg-white/10"
                                     >
                                         {showNicknameInput ? "닉네임 숨기기" : "닉네임 설정"}
                                     </button>
@@ -406,7 +406,7 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
                                         value={comment}
                                         onChange={(e) => setComment(e.target.value)}
                                         placeholder="댓글 달기"
-                                        className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-pink-500"
+                                        className="input-default flex-1"
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter" && !e.shiftKey) {
                                                 e.preventDefault();
