@@ -31,6 +31,7 @@ export default function AdminPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editData, setEditData] = useState<EditingCharacter>({});
     const [showAddForm, setShowAddForm] = useState(false);
+    const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [newCharacter, setNewCharacter] = useState<EditingCharacter>({
         name: "",
         slug: "",
@@ -216,6 +217,70 @@ export default function AdminPage() {
         }
     };
 
+    // JSON/JSONL 대량 업로드 핸들러
+    const handleBulkUpload = async (jsonText: string) => {
+        try {
+            let charactersToCreate: any[] = [];
+
+            // JSONL 형식인지 확인 (줄바꿈으로 구분된 JSON 객체들)
+            const trimmed = jsonText.trim();
+            if (trimmed.startsWith('[')) {
+                // JSON Array
+                charactersToCreate = JSON.parse(trimmed);
+            } else {
+                // JSONL (각 줄이 JSON 객체)
+                const lines = trimmed.split('\n').filter(line => line.trim());
+                charactersToCreate = lines.map(line => JSON.parse(line.trim()));
+            }
+
+            if (!Array.isArray(charactersToCreate)) {
+                charactersToCreate = [charactersToCreate];
+            }
+
+            let successCount = 0;
+            let errorCount = 0;
+            const errors: string[] = [];
+
+            for (const char of charactersToCreate) {
+                try {
+                    // 필수 필드 확인
+                    if (!char.name || !char.slug || !char.systemPrompt || !char.greeting || !char.introduction) {
+                        errors.push(`${char.name || char.slug || '알 수 없음'}: 필수 항목 누락`);
+                        errorCount++;
+                        continue;
+                    }
+
+                    await createCharacter.mutateAsync({
+                        name: char.name,
+                        slug: char.slug,
+                        tagline: char.tagline || undefined,
+                        introduction: char.introduction,
+                        systemPrompt: char.systemPrompt,
+                        greeting: char.greeting,
+                        age: char.age || undefined,
+                        gender: char.gender || undefined,
+                        imageUrls: char.imageUrls || [],
+                    });
+                    successCount++;
+                } catch (err: any) {
+                    errors.push(`${char.name || char.slug}: ${err.message}`);
+                    errorCount++;
+                }
+            }
+
+            getCharacters.refetch();
+            setShowBulkUpload(false);
+
+            let message = `${successCount}개 캐릭터 생성 완료`;
+            if (errorCount > 0) {
+                message += `\n${errorCount}개 실패:\n${errors.join('\n')}`;
+            }
+            alert(message);
+        } catch (err: any) {
+            alert(`JSON 파싱 오류: ${err.message}`);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-900 text-white p-6">
             <div className="max-w-6xl mx-auto">
@@ -224,7 +289,13 @@ export default function AdminPage() {
                 </header>
 
                 {/* 캐릭터 관리 */}
-                <div className="flex justify-end mb-4">
+                <div className="flex justify-end gap-2 mb-4">
+                    <button
+                        onClick={() => setShowBulkUpload(!showBulkUpload)}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium"
+                    >
+                        {showBulkUpload ? "취소" : "📋 JSON 업로드"}
+                    </button>
                     <button
                         onClick={() => setShowAddForm(!showAddForm)}
                         className="px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg text-sm font-medium"
@@ -232,6 +303,15 @@ export default function AdminPage() {
                         {showAddForm ? "취소" : "+ 새 캐릭터"}
                     </button>
                 </div>
+
+                {/* JSON/JSONL 대량 업로드 폼 */}
+                {showBulkUpload && (
+                    <BulkUploadForm
+                        onUpload={handleBulkUpload}
+                        onCancel={() => setShowBulkUpload(false)}
+                        isPending={createCharacter.isPending}
+                    />
+                )}
 
                 {/* 새 캐릭터 추가 폼 */}
                 {showAddForm && (
@@ -630,6 +710,107 @@ function CharacterForm({
                         className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-sm font-medium disabled:opacity-50"
                     >
                         {isPending ? "저장 중..." : "저장"}
+                    </button>
+                    <button
+                        onClick={onCancel}
+                        className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-sm"
+                    >
+                        취소
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// JSON/JSONL 대량 업로드 폼 컴포넌트
+function BulkUploadForm({
+    onUpload,
+    onCancel,
+    isPending,
+}: {
+    onUpload: (jsonText: string) => void;
+    onCancel: () => void;
+    isPending: boolean;
+}) {
+    const [jsonText, setJsonText] = useState("");
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!jsonText.trim()) {
+            alert("JSON 데이터를 입력해주세요.");
+            return;
+        }
+        setIsUploading(true);
+        try {
+            await onUpload(jsonText);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const exampleJson = `{
+  "name": "캐릭터 이름",
+  "slug": "character-slug",
+  "tagline": "한줄 소개 (선택)",
+  "introduction": "캐릭터 소개",
+  "systemPrompt": "시스템 프롬프트",
+  "greeting": "인트로 메시지",
+  "age": 25,
+  "gender": "female"
+}`;
+
+    return (
+        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-blue-700">
+            <h2 className="text-lg font-semibold mb-4">📋 JSON/JSONL 대량 업로드</h2>
+
+            <div className="mb-4 text-sm text-gray-400">
+                <p className="mb-2">
+                    <strong>지원 형식:</strong>
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>JSON Array: <code className="bg-gray-700 px-1 rounded">[{"{...}"}, {"{...}"}]</code></li>
+                    <li>JSONL: 한 줄에 하나씩 JSON 객체</li>
+                    <li>단일 JSON 객체</li>
+                </ul>
+                <p className="mt-2">
+                    <strong>필수 항목:</strong> name, slug, introduction, systemPrompt, greeting
+                </p>
+                <p>
+                    <strong>선택 항목:</strong> tagline, age, gender, isActive, isPublic
+                </p>
+            </div>
+
+            <details className="mb-4">
+                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-400">
+                    예시 보기
+                </summary>
+                <pre className="mt-2 bg-gray-900 p-3 rounded text-xs overflow-x-auto text-gray-300">
+                    {exampleJson}
+                </pre>
+            </details>
+
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-sm text-gray-400 mb-1">
+                        JSON 또는 JSONL 붙여넣기
+                    </label>
+                    <textarea
+                        value={jsonText}
+                        onChange={(e) => setJsonText(e.target.value)}
+                        rows={15}
+                        placeholder='[ { "name": "...", ... }, { "name": "...", ... } ]'
+                        className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm resize-none font-mono"
+                    />
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isPending || isUploading || !jsonText.trim()}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium disabled:opacity-50"
+                    >
+                        {isUploading ? "업로드 중..." : "업로드"}
                     </button>
                     <button
                         onClick={onCancel}
