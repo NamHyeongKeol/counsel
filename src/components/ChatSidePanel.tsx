@@ -382,13 +382,13 @@ export function ChatSidePanel({
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setShowTitleEdit(false)}
-                                className="flex-1 py-2 bg-white/10 text-white rounded-lg"
+                                className="btn-cancel flex-1"
                             >
                                 취소
                             </button>
                             <button
                                 onClick={handleTitleUpdate}
-                                className="flex-1 py-2 bg-black border border-brand text-brand hover:bg-brand/10 rounded-lg"
+                                className="btn-primary flex-1"
                             >
                                 저장
                             </button>
