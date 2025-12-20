@@ -19,6 +19,7 @@ interface Character {
     slug: string;
     tagline: string | null;
     introduction: string;
+    greeting: string;
     age?: number | null;
     gender?: string | null;
     images: { id: string; imageUrl: string; order: number }[];
@@ -275,6 +276,18 @@ export function CharacterDetailContent({
                 >
                     {isStartingChat ? "대화방 생성 중..." : "💬 대화 시작하기"}
                 </button>
+            </div>
+
+            {/* 인트로 메시지 섹션 */}
+            <div className="px-4 py-6 border-b border-white/10">
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 bg-white/10 rounded-full text-sm text-white/80">
+                        💬 첫 인사
+                    </span>
+                </div>
+                <div className="text-white/80 leading-relaxed whitespace-pre-wrap bg-white/5 rounded-lg p-4">
+                    {character.greeting}
+                </div>
             </div>
 
             {/* 소개 섹션 */}
