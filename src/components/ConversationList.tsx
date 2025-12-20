@@ -129,7 +129,7 @@ export function ConversationList({
             </header>
 
             {/* 대화 목록 */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto pb-20">
                 {getConversations.isLoading ? (
                     <div className="flex items-center justify-center h-40">
                         <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />

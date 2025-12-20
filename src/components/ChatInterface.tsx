@@ -89,13 +89,8 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
         { enabled: !!conversationId }
     );
 
-    // 기본 캐릭터 조회 (fallback용)
-    const getActiveCharacters = trpc.getActiveCharacters.useQuery();
-
-    // 현재 캐릭터 정보 (대화방에 연결된 캐릭터 우선, 없으면 첫 번째 활성 캐릭터)
-    const conversationCharacter = getConversation.data?.character;
-    const fallbackCharacter = getActiveCharacters.data?.[0];
-    const character = conversationCharacter || fallbackCharacter;
+    // 현재 캐릭터 정보 (대화방에 연결된 캐릭터)
+    const character = getConversation.data?.character;
 
     const characterImage = character?.images?.[0]?.imageUrl || null;
     const characterName = character?.name || "언니";
@@ -382,7 +377,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
     return (
         <div className="fixed inset-0 bg-black">
             <div className="flex flex-col h-full w-full max-w-[390px] mx-auto bg-black">
-                {/* 헤더 */}
+                {/* 헤더 - 로딩 중에도 표시 */}
                 <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-md border-b border-white/10">
                     <div className="flex items-center gap-3">
                         {/* 뒤로가기 (대화방 목록) */}
@@ -394,24 +389,33 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        <button
-                            onClick={handleOpenProfile}
-                            className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0 overflow-hidden hover:ring-2 hover:ring-white/30 transition-all"
-                        >
-                            {characterImage ? (
-                                <img src={characterImage} alt={characterName} className="w-full h-full object-cover" />
-                            ) : (
-                                <span className="text-white text-sm font-bold">{characterName.slice(0, 2)}</span>
-                            )}
-                        </button>
-                        <div>
-                            <h1 className="text-white font-semibold">{characterName}</h1>
-                            <p className="text-white/60 text-xs">
-                                {getConversation.data?.model
-                                    ? AI_MODELS[getConversation.data.model as AIModelId]?.name || "AI"
-                                    : "Gemini 3 Flash"}
-                            </p>
-                        </div>
+                        {getConversation.isLoading ? (
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-white/10 animate-pulse" />
+                                <div className="h-5 w-20 bg-white/10 rounded animate-pulse" />
+                            </div>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={handleOpenProfile}
+                                    className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0 overflow-hidden hover:ring-2 hover:ring-white/30 transition-all"
+                                >
+                                    {characterImage ? (
+                                        <img src={characterImage} alt={characterName} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-white text-sm font-bold">{characterName.slice(0, 2)}</span>
+                                    )}
+                                </button>
+                                <div>
+                                    <h1 className="text-white font-semibold">{characterName}</h1>
+                                    <p className="text-white/60 text-xs">
+                                        {getConversation.data?.model
+                                            ? AI_MODELS[getConversation.data.model as AIModelId]?.name || "AI"
+                                            : "Gemini 3 Flash"}
+                                    </p>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* 햄버거 메뉴 */}
@@ -633,13 +637,13 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                             onKeyDown={handleKeyDown}
                             placeholder="고민을 이야기해주세요..."
                             rows={1}
-                            className="flex-1 bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:border-pink-400 focus:outline-none rounded-2xl px-4 py-2.5 resize-none min-h-[42px] max-h-[120px] text-sm leading-relaxed"
+                            className="flex-1 bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:border-pink-400 focus:outline-none rounded-lg px-4 py-2.5 resize-none min-h-[42px] max-h-[120px] text-sm leading-relaxed"
                             disabled={isStreaming}
                         />
                         <Button
                             type="submit"
                             disabled={!input.trim() || isStreaming}
-                            className="bg-black border border-[#E30A9E] text-white hover:bg-black active:bg-[#943576] rounded-full px-5 h-[42px] disabled:opacity-50 shrink-0"
+                            className="bg-black border border-[#E30A9E] text-white hover:bg-black active:bg-[#943576] rounded-lg px-5 h-[42px] disabled:opacity-50 shrink-0"
                         >
                             {isStreaming ? "..." : "전송"}
                         </Button>

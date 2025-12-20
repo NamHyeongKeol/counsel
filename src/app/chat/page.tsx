@@ -34,6 +34,11 @@ export default function ChatListPage() {
         return (
             <div className="fixed inset-0 bg-black">
                 <div className="flex flex-col h-full w-full max-w-[390px] mx-auto">
+                    {/* 헤더 */}
+                    <header className="flex items-center justify-center h-14 border-b border-white/10 shrink-0">
+                        <h1 className="text-lg font-bold text-white">대화 목록</h1>
+                    </header>
+                    {/* 로딩 */}
                     <div className="flex items-center justify-center h-40">
                         <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                     </div>

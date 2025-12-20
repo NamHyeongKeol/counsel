@@ -189,7 +189,7 @@ export function MessageBubble({
                         </div>
                         {/* 액션 버튼 줄 */}
                         {!selectMode && (
-                            <div className="flex items-center gap-1 mt-2 pt-2 border-t border-white/5">
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
                                 {/* 리롤 - assistant 메시지의 마지막 메시지에만 표시 */}
                                 {!isUser && isLastAssistantMessage && onReroll && (
                                     <button
