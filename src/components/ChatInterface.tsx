@@ -50,6 +50,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
     const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState<string | null>(null);
     const [showProfile, setShowProfile] = useState(false);
     const [currentCharacterId, setCurrentCharacterId] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     // 피드백/수정 모달 상태
     const [feedbackModal, setFeedbackModal] = useState<{ isOpen: boolean; messageId: string | null }>({ isOpen: false, messageId: null });
@@ -95,6 +96,12 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
 
     const characterImage = character?.images?.[0]?.imageUrl || null;
     const characterName = character?.name || "언니";
+
+    // 어드민 여부 확인
+    useEffect(() => {
+        const adminStatus = localStorage.getItem("isAdmin");
+        setIsAdmin(adminStatus === "true");
+    }, []);
 
     // 캐릭터 ID 설정
     useEffect(() => {
@@ -570,6 +577,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                         navigator.clipboard.writeText(message.content);
                                         toast.success("복사되었습니다");
                                     }}
+                                    isAdmin={isAdmin}
                                 />
                             ));
                         })()}

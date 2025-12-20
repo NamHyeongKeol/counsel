@@ -418,6 +418,24 @@ export const appRouter = router({
             return user;
         }),
 
+    // 유저를 어드민으로 설정 (/admin 접속 시 호출)
+    setAdmin: publicProcedure
+        .input(z.object({ userId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.user.update({
+                where: { id: input.userId },
+                data: { isAdmin: true },
+            });
+        }),
+
+    // 유저 정보 조회 (isAdmin 포함)
+    getUser: publicProcedure
+        .input(z.object({ userId: z.string() }))
+        .query(async ({ ctx, input }) => {
+            return ctx.prisma.user.findUnique({
+                where: { id: input.userId },
+            });
+        }),
 
     // 대화방 모델 설정 업데이트
     updateConversationModel: publicProcedure

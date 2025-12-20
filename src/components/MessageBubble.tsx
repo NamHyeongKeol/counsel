@@ -33,6 +33,8 @@ interface MessageBubbleProps {
     onCopy?: () => void;
     isLiked?: boolean;
     isDisliked?: boolean;
+    // 어드민 여부 (가격 상세 표시)
+    isAdmin?: boolean;
 }
 
 // 통통 튀는 로딩 애니메이션 컴포넌트
@@ -75,6 +77,7 @@ export function MessageBubble({
     onCopy,
     isLiked,
     isDisliked,
+    isAdmin,
 }: MessageBubbleProps) {
     const isUser = role === "user";
 
@@ -160,22 +163,26 @@ export function MessageBubble({
                 {createdAt && !isLoading && (
                     <>
                         <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
-                            {/* Assistant 메시지만 모델명, 토큰, 비용 표시 */}
+                            {/* Assistant 메시지: 어드민은 상세 정보, 일반 유저는 0원 표시 */}
                             {!isUser && model && (
-                                <span className="text-[10px] text-white/40 flex gap-1 items-center">
-                                    <span>{displayModelName}</span>
-                                    {inputTokens != null && outputTokens != null && (
-                                        <span>· {inputTokens}/{outputTokens}</span>
-                                    )}
-                                    {cost != null && (
-                                        <span className="text-pink-400/60 font-medium">
-                                            · ${cost.toFixed(4)}
-                                            <span className="ml-1 text-[9px] opacity-70">
-                                                (약 {Math.round(cost * CURRENT_EXCHANGE_RATE)}원)
+                                isAdmin ? (
+                                    <span className="text-[10px] text-white/40 flex gap-1 items-center">
+                                        <span>{displayModelName}</span>
+                                        {inputTokens != null && outputTokens != null && (
+                                            <span>· {inputTokens}/{outputTokens}</span>
+                                        )}
+                                        {cost != null && (
+                                            <span className="text-pink-400/60 font-medium">
+                                                · ${cost.toFixed(4)}
+                                                <span className="ml-1 text-[9px] opacity-70">
+                                                    (약 {Math.round(cost * CURRENT_EXCHANGE_RATE)}원)
+                                                </span>
                                             </span>
-                                        </span>
-                                    )}
-                                </span>
+                                        )}
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] text-white/40">0원</span>
+                                )
                             )}
                             <span className={cn(
                                 "text-[10px]",

@@ -46,6 +46,30 @@ export default function AdminPage() {
     const deleteCharacter = trpc.deleteCharacter.useMutation();
     const addCharacterImage = trpc.addCharacterImage.useMutation();
     const removeCharacterImage = trpc.removeCharacterImage.useMutation();
+    const getOrCreateUser = trpc.getOrCreateUser.useMutation();
+    const setAdmin = trpc.setAdmin.useMutation();
+
+    // 어드민 페이지 접속 시 자동으로 어드민 설정
+    useEffect(() => {
+        async function setUserAsAdmin() {
+            let visitorId = localStorage.getItem("unni-visitor-id");
+            if (!visitorId) {
+                visitorId = crypto.randomUUID();
+                localStorage.setItem("unni-visitor-id", visitorId);
+            }
+            const user = await getOrCreateUser.mutateAsync({ visitorId });
+            localStorage.setItem("userId", user.id);
+
+            // 어드민으로 설정
+            if (!user.isAdmin) {
+                await setAdmin.mutateAsync({ userId: user.id });
+                localStorage.setItem("isAdmin", "true");
+            } else {
+                localStorage.setItem("isAdmin", "true");
+            }
+        }
+        setUserAsAdmin();
+    }, []);
 
     useEffect(() => {
         if (getCharacters.data) {
@@ -253,6 +277,11 @@ export default function AdminPage() {
                                         <span className="font-bold text-pink-400 text-lg">
                                             {character.name}
                                         </span>
+                                        {character.age && (
+                                            <span className="ml-1 text-gray-400 text-sm">
+                                                ({character.age}세)
+                                            </span>
+                                        )}
                                         <span className="ml-2 text-gray-500 text-sm">
                                             @{character.slug}
                                         </span>

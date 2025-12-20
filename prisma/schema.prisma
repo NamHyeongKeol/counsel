@@ -16,6 +16,7 @@ model User {
   nickname         String? // 댓글 작성시 표시될 닉네임
   gender           String? // "male" | "female"
   age              Int? // 나이
+  isAdmin          Boolean            @default(false) // 어드민 여부
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   conversations    Conversation[]
