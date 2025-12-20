@@ -37,7 +37,7 @@ export function CharacterSelectModal({ isOpen, onClose, onSelect, userId }: Char
 
             {/* 모달 */}
             <div className="absolute inset-0 flex items-center justify-center p-4">
-                <div className="w-full max-w-[360px] max-h-[80vh] bg-gray-900 rounded-2xl overflow-hidden flex flex-col">
+                <div className="w-full max-w-[360px] max-h-[80vh] bg-black rounded-2xl overflow-hidden flex flex-col border border-white/10">
                     {/* 헤더 */}
                     <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
                         <h2 className="text-lg font-bold text-white">채팅방 생성하기</h2>

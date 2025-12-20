@@ -9,6 +9,7 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { CharacterProfile } from "@/components/CharacterProfile";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { EditMessageModal } from "@/components/EditMessageModal";
+import { ChatSidePanel } from "@/components/ChatSidePanel";
 import { trpc } from "@/lib/trpc/client";
 import { AI_MODELS, type AIModelId } from "@/lib/ai/constants";
 import { toast } from "sonner";
@@ -419,74 +420,14 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                     </div>
 
                     {/* 햄버거 메뉴 */}
-                    <div ref={menuRef} className="relative">
-                        <button
-                            onClick={() => setMenuOpen(!menuOpen)}
-                            className="p-2 text-white/70 hover:text-white"
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
-
-                        {menuOpen && (
-                            <div className="absolute right-0 top-12 w-48 bg-gray-900 rounded-lg shadow-xl border border-white/10 overflow-hidden z-20">
-                                <button
-                                    onClick={handleNewConversation}
-                                    className="w-full px-4 py-3 text-left text-white/90 hover:bg-white/10 text-sm"
-                                >
-                                    ✨ 새 대화 시작
-                                </button>
-                                <button
-                                    onClick={enterSelectAllMode}
-                                    className="w-full px-4 py-3 text-left text-white/90 hover:bg-white/10 text-sm border-t border-white/10"
-                                >
-                                    ☑ 전체 메시지 선택
-                                </button>
-
-                                {/* 모델 선택 섹션 */}
-                                <div className="px-4 py-2 border-t border-white/10">
-                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-2">
-                                        AI 모델 선택
-                                    </p>
-                                    <div className="flex flex-col gap-1">
-                                        {(Object.keys(AI_MODELS) as AIModelId[]).map((id) => {
-                                            const info = AI_MODELS[id];
-                                            return (
-                                                <button
-                                                    key={id}
-                                                    onClick={async () => {
-                                                        if (id === getConversation.data?.model) return;
-                                                        if (isStreaming) {
-                                                            alert("응답 중에는 모델을 변경할 수 없어요!");
-                                                            return;
-                                                        }
-                                                        await updateConversationModel.mutateAsync({
-                                                            conversationId,
-                                                            model: id,
-                                                        });
-                                                        await utils.getConversation.refetch();
-                                                        setMenuOpen(false);
-                                                    }}
-                                                    className={`text-left text-xs px-2 py-1.5 rounded transition-colors flex items-center justify-between ${getConversation.data?.model === id
-                                                        ? "bg-pink-600 text-white"
-                                                        : "text-white/70 hover:bg-white/10"
-                                                        }`}
-                                                >
-                                                    <span>{info.name}</span>
-                                                    {getConversation.data?.model === id && (
-                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    <button
+                        onClick={() => setMenuOpen(true)}
+                        className="p-2 text-white/70 hover:text-white"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                 </header>
 
                 {/* 선택 모드 툴바 */}
@@ -703,6 +644,21 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                     onClose={() => setShowProfile(false)}
                 />
             )}
+
+            {/* 사이드 메뉴 패널 */}
+            <ChatSidePanel
+                isOpen={menuOpen}
+                onClose={() => setMenuOpen(false)}
+                conversationId={conversationId}
+                userId={userId}
+                currentModel={getConversation.data?.model || "gemini-3-flash-preview"}
+                characterId={currentCharacterId}
+                onSelectModeEnter={() => {
+                    setSelectMode(true);
+                    setSelectedIds(new Set());
+                }}
+                onRefresh={() => getConversation.refetch()}
+            />
         </div>
     );
 }

@@ -432,6 +432,109 @@ export const appRouter = router({
             });
         }),
 
+    // 대화방 제목 업데이트
+    updateConversationTitle: publicProcedure
+        .input(z.object({
+            conversationId: z.string(),
+            title: z.string(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.conversation.update({
+                where: { id: input.conversationId },
+                data: { title: input.title },
+            });
+        }),
+
+    // 대화방 복제
+    duplicateConversation: publicProcedure
+        .input(z.object({
+            conversationId: z.string(),
+            userId: z.string(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            // 원본 대화방 조회
+            const original = await ctx.prisma.conversation.findUnique({
+                where: { id: input.conversationId },
+                include: {
+                    messages: {
+                        where: { isDeleted: false },
+                        orderBy: { createdAt: "asc" },
+                    },
+                },
+            });
+
+            if (!original) {
+                throw new Error("대화방을 찾을 수 없습니다.");
+            }
+
+            // 새 대화방 생성
+            const newConversation = await ctx.prisma.conversation.create({
+                data: {
+                    userId: input.userId,
+                    characterId: original.characterId,
+                    title: original.title ? `${original.title} (복제본)` : "복제된 대화방",
+                    model: original.model,
+                },
+            });
+
+            // 메시지 복제
+            if (original.messages.length > 0) {
+                await ctx.prisma.message.createMany({
+                    data: original.messages.map((m) => ({
+                        conversationId: newConversation.id,
+                        role: m.role,
+                        content: m.content,
+                        model: m.model,
+                        inputTokens: m.inputTokens,
+                        outputTokens: m.outputTokens,
+                        cost: m.cost,
+                    })),
+                });
+            }
+
+            return newConversation;
+        }),
+
+    // 삭제 잠금 토글
+    toggleDeleteLock: publicProcedure
+        .input(z.object({
+            conversationId: z.string(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const conversation = await ctx.prisma.conversation.findUnique({
+                where: { id: input.conversationId },
+            });
+
+            if (!conversation) {
+                throw new Error("대화방을 찾을 수 없습니다.");
+            }
+
+            return ctx.prisma.conversation.update({
+                where: { id: input.conversationId },
+                data: { deleteLocked: !conversation.deleteLocked },
+            });
+        }),
+
+    // 메시지 검색
+    searchMessages: publicProcedure
+        .input(z.object({
+            conversationId: z.string(),
+            query: z.string(),
+        }))
+        .query(async ({ ctx, input }) => {
+            return ctx.prisma.message.findMany({
+                where: {
+                    conversationId: input.conversationId,
+                    isDeleted: false,
+                    content: {
+                        contains: input.query,
+                        mode: "insensitive",
+                    },
+                },
+                orderBy: { createdAt: "asc" },
+            });
+        }),
+
     // ============================================
     // 캐릭터 관리 API
     // ============================================
