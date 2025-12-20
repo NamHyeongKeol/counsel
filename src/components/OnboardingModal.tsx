@@ -47,7 +47,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <div className="w-full max-w-sm mx-4 bg-gradient-to-br from-purple-900/90 to-pink-900/90 rounded-2xl p-6 border border-white/10 shadow-2xl">
+            <div className="w-full max-w-sm mx-4 bg-black/95 rounded-2xl p-6 border border-white/10 shadow-2xl">
                 {/* Progress indicator */}
                 <div className="flex gap-2 mb-6">
                     {["name", "gender", "age"].map((s, i) => (
@@ -89,7 +89,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
                             <button
                                 onClick={handleNameSubmit}
                                 disabled={!name.trim()}
-                                className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-purple-600 transition-all"
+                                className="w-full py-3 bg-brand text-white font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition-all"
                             >
                                 다음
                             </button>
@@ -153,7 +153,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
                             <button
                                 onClick={handleAgeSubmit}
                                 disabled={!age || parseInt(age, 10) <= 0}
-                                className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-pink-600 hover:to-purple-600 transition-all"
+                                className="w-full py-3 bg-brand text-white font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition-all"
                             >
                                 시작하기 🚀
                             </button>

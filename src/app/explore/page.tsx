@@ -110,11 +110,10 @@ export default function ExplorePage() {
                         <h3 className="text-white font-bold text-base truncate">
                             {character.name}
                         </h3>
-                        {character.age && (
-                            <span className="text-white/60 text-xs">({character.age})</span>
-                        )}
-                        {character.gender && (
-                            <span className="text-white/60 text-xs">{character.gender === "male" ? "♂" : "♀"}</span>
+                        {(character.age || character.gender) && (
+                            <span className="text-white/60 text-xs">
+                                ({character.age}{character.age && character.gender && ", "}{character.gender && (character.gender === "male" ? "♂" : "♀")})
+                            </span>
                         )}
                     </div>
                     {character.tagline && (
