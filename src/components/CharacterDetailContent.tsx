@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 interface CharacterDetailContentProps {
     characterId?: string;
@@ -168,11 +169,7 @@ export function CharacterDetailContent({
 
     // 로딩 상태
     if (getCharacterQuery.isLoading) {
-        return (
-            <div className="flex items-center justify-center h-full pt-20 bg-black">
-                <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
+        return <LoadingSpinner fullScreen />;
     }
 
     // 에러 상태

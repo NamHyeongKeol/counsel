@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { OnboardingModal } from "@/components/OnboardingModal";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface User {
   id: string;
@@ -67,9 +68,7 @@ export default function Home() {
         {showOnboarding ? (
           <OnboardingModal onComplete={handleOnboardingComplete} />
         ) : (
-          <div className="flex items-center justify-center h-40">
-            <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <LoadingSpinner />
         )}
       </div>
     </div>

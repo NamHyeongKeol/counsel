@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { CharacterProfile } from "@/components/CharacterProfile";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface Character {
     id: string;
@@ -144,9 +145,7 @@ export default function ExplorePage() {
                     className="flex-1 overflow-y-auto pb-16 pt-14"
                 >
                     {getPublicCharacters.isLoading ? (
-                        <div className="flex items-center justify-center h-40">
-                            <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-                        </div>
+                        <LoadingSpinner />
                     ) : characters.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-40 text-white/50">
                             <p>아직 공개된 상담사가 없어요</p>

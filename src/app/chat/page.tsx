@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConversationList } from "@/components/ConversationList";
 import { trpc } from "@/lib/trpc/client";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function ChatListPage() {
     const router = useRouter();
@@ -39,9 +40,7 @@ export default function ChatListPage() {
                         <h1 className="text-lg font-bold text-white">대화 목록</h1>
                     </header>
                     {/* 로딩 */}
-                    <div className="flex items-center justify-center h-40">
-                        <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-                    </div>
+                    <LoadingSpinner />
                 </div>
             </div>
         );
