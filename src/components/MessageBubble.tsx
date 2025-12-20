@@ -139,7 +139,7 @@ export function MessageBubble({
                         <LoadingDots />
                     </p>
                 ) : (
-                    <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none prose-p:my-3 prose-p:leading-relaxed prose-strong:text-pink-300 prose-em:text-gray-400 prose-a:text-blue-400 prose-a:underline prose-a:underline-offset-2 hover:prose-a:text-blue-300">
+                    <div className="text-sm leading-relaxed">
                         <ReactMarkdown
                             remarkPlugins={[remarkBreaks]}
                             components={{
@@ -149,11 +149,14 @@ export function MessageBubble({
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={(e) => e.stopPropagation()}
+                                        className="text-blue-400 underline underline-offset-2 hover:text-blue-300"
                                     >
                                         {children}
                                     </a>
                                 ),
-                                p: ({ children }) => <p>{children}</p>,
+                                p: ({ children }) => <p className="my-3 first:mt-0 last:mb-0">{children}</p>,
+                                strong: ({ children }) => <strong className="text-pink-300 font-semibold">{children}</strong>,
+                                em: ({ children }) => <em className="text-gray-400 italic">{children}</em>,
                             }}
                         >
                             {content}
