@@ -169,8 +169,14 @@ function EditProfileModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm">
-            <div className="w-full max-w-[390px] mx-auto bg-black rounded-t-2xl border-t border-white/10 relative">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={onCancel}
+        >
+            <div
+                className="w-full max-w-[360px] mx-4 bg-black rounded-2xl border border-white/10 relative"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* 닫기 버튼 */}
                 <button
                     onClick={onCancel}
@@ -186,7 +192,7 @@ function EditProfileModal({
                     <h2 className="text-base font-semibold text-white">내 계정 수정하기</h2>
                 </div>
 
-                <div className="px-4 pb-6 space-y-4">
+                <div className="px-4 pb-5 space-y-4">
                     {/* 닉네임 */}
                     <div>
                         <label className="block text-white/50 text-xs mb-1.5">닉네임</label>
@@ -248,14 +254,22 @@ function EditProfileModal({
                         />
                     </div>
 
-                    {/* 저장 버튼 */}
-                    <button
-                        onClick={handleSubmit}
-                        disabled={!name.trim() || isSubmitting}
-                        className="w-full py-3 mt-2 bg-white text-black text-sm font-medium rounded-lg hover:bg-white/90 disabled:opacity-50"
-                    >
-                        {isSubmitting ? "저장 중..." : "저장하기"}
-                    </button>
+                    {/* 버튼 */}
+                    <div className="flex gap-2 pt-2">
+                        <button
+                            onClick={onCancel}
+                            className="flex-1 py-2.5 bg-white/5 border border-white/10 text-white/70 text-sm rounded-lg hover:bg-white/10"
+                        >
+                            취소
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={!name.trim() || isSubmitting}
+                            className="flex-1 py-2.5 bg-black border border-brand text-brand text-sm font-medium rounded-lg hover:bg-brand/10 disabled:opacity-50"
+                        >
+                            {isSubmitting ? "저장 중..." : "저장하기"}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
