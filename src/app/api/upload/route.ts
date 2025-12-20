@@ -3,6 +3,10 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2Client, R2_BUCKET_NAME, getPublicUrl, isR2Configured } from "@/lib/r2";
 
+// Route Segment Config (App Router)
+export const runtime = "nodejs";
+export const maxDuration = 30; // 30초 타임아웃
+
 // Presigned URL 생성 (GET) 또는 직접 업로드 (POST)
 export async function POST(request: NextRequest) {
     if (!isR2Configured) {

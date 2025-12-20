@@ -20,22 +20,40 @@ export function ImageUpload({ onUpload, className }: ImageUploadProps) {
         setUploadProgress(0);
 
         try {
-            const formData = new FormData();
-            formData.append("file", file);
+            // 1. Presigned URL 요청
+            const presignedFormData = new FormData();
+            presignedFormData.append("mode", "presigned");
+            presignedFormData.append("filename", file.name);
+            presignedFormData.append("contentType", file.type);
 
-            const response = await fetch("/api/upload", {
+            const presignedResponse = await fetch("/api/upload", {
                 method: "POST",
-                body: formData,
+                body: presignedFormData,
             });
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || "업로드 실패");
+            if (!presignedResponse.ok) {
+                const data = await presignedResponse.json();
+                throw new Error(data.error || "Presigned URL 발급 실패");
             }
 
-            const data = await response.json();
+            const { presignedUrl, publicUrl } = await presignedResponse.json();
+            setUploadProgress(30);
+
+            // 2. Presigned URL로 직접 R2에 업로드
+            const uploadResponse = await fetch(presignedUrl, {
+                method: "PUT",
+                body: file,
+                headers: {
+                    "Content-Type": file.type,
+                },
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error("R2 업로드 실패");
+            }
+
             setUploadProgress(100);
-            onUpload(data.publicUrl);
+            onUpload(publicUrl);
         } catch (err) {
             setError(err instanceof Error ? err.message : "업로드 실패");
         } finally {
