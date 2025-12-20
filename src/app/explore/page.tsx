@@ -13,6 +13,7 @@ interface Character {
     tagline: string | null;
     introduction: string;
     age: number | null;
+    gender?: string | null;
     images: { id: string; imageUrl: string }[];
     _count?: { conversations: number; comments: number };
     createdAt?: Date;
@@ -111,6 +112,9 @@ export default function ExplorePage() {
                         </h3>
                         {character.age && (
                             <span className="text-white/60 text-xs">({character.age})</span>
+                        )}
+                        {character.gender && (
+                            <span className="text-white/60 text-xs">{character.gender === "male" ? "♂" : "♀"}</span>
                         )}
                     </div>
                     {character.tagline && (
