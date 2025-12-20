@@ -639,7 +639,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                         <Button
                             type="submit"
                             disabled={!input.trim() || isStreaming}
-                            className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-full px-5 h-[42px] disabled:opacity-50 shrink-0"
+                            className="bg-black border border-[#E30A9E] text-white hover:bg-black active:bg-[#943576] rounded-full px-5 h-[42px] disabled:opacity-50 shrink-0"
                         >
                             {isStreaming ? "..." : "전송"}
                         </Button>

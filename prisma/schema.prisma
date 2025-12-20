@@ -101,7 +101,7 @@ model Character {
   systemPrompt  String             @db.Text // AI 시스템 프롬프트
   greeting      String             @db.Text // 인트로 메시지
   isActive      Boolean            @default(true) // 관리자 활성화 여부
-  isPublic      Boolean            @default(false) // 유저에게 공개 여부
+  isPublic      Boolean            @default(true) // 유저에게 공개 여부
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   images        CharacterImage[]

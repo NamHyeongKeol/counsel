@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { router, publicProcedure } from "./init";
 import { chat } from "@/lib/ai/provider";
+import { calculateCost, AIModelId } from "@/lib/ai/constants";
 
 export const appRouter = router({
     // 대화 목록 조회 (삭제되지 않은 대화방만)
@@ -151,6 +152,13 @@ export const appRouter = router({
                     })),
                 });
 
+                // 비용 계산
+                const cost = calculateCost(
+                    aiResult.model as AIModelId,
+                    aiResult.inputTokens,
+                    aiResult.outputTokens
+                );
+
                 // AI 응답 저장 (모델 및 토큰 정보 포함)
                 assistantMessage = await ctx.prisma.message.create({
                     data: {
@@ -160,6 +168,7 @@ export const appRouter = router({
                         model: aiResult.model,
                         inputTokens: aiResult.inputTokens,
                         outputTokens: aiResult.outputTokens,
+                        cost: cost,
                     },
                 });
             } catch (error) {
@@ -327,9 +336,16 @@ export const appRouter = router({
                         role: m.role as "user" | "assistant",
                         content: m.content,
                     })),
-                    modelId: conversation.model as import("@/lib/ai/constants").AIModelId | undefined,
+                    modelId: conversation.model as AIModelId | undefined,
                     systemPrompt: conversation.character?.systemPrompt,
                 });
+
+                // 비용 계산
+                const cost = calculateCost(
+                    aiResult.model as AIModelId,
+                    aiResult.inputTokens,
+                    aiResult.outputTokens
+                );
 
                 // 새 AI 응답 저장
                 assistantMessage = await ctx.prisma.message.create({
@@ -340,6 +356,7 @@ export const appRouter = router({
                         model: aiResult.model,
                         inputTokens: aiResult.inputTokens,
                         outputTokens: aiResult.outputTokens,
+                        cost: cost,
                     },
                 });
             } catch (error) {
@@ -536,6 +553,7 @@ export const appRouter = router({
                     introduction: input.introduction,
                     systemPrompt: input.systemPrompt,
                     greeting: input.greeting,
+                    isPublic: true, // 새 캐릭터는 기본 공개
                 },
             });
 

@@ -126,7 +126,7 @@ export function MessageBubble({
                 className={cn(
                     "rounded-2xl px-4 py-3 break-words max-w-[85%]",
                     isUser
-                        ? "bg-green-800/60 text-white rounded-tr-sm"
+                        ? "bg-white/10 backdrop-blur-sm text-white rounded-tr-sm border border-white/10"
                         : "bg-white/10 backdrop-blur-sm text-white rounded-tl-sm border border-white/10",
                     isSelected && "ring-2 ring-pink-400"
                 )}

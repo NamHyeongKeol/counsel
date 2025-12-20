@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 
 interface CharacterProfileProps {
     characterId: string;
-    userId: string;
+    userId?: string;
     isOpen: boolean;
     onClose: () => void;
 }
@@ -20,10 +21,12 @@ interface Character {
 }
 
 export function CharacterProfile({ characterId, userId, isOpen, onClose }: CharacterProfileProps) {
+    const router = useRouter();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [comment, setComment] = useState("");
     const [nickname, setNickname] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isStartingChat, setIsStartingChat] = useState(false);
     const [showNicknameInput, setShowNicknameInput] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -41,6 +44,8 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
     );
     const addComment = trpc.addCharacterComment.useMutation();
     const updateNickname = trpc.updateUserNickname.useMutation();
+    const createConversation = trpc.createConversation.useMutation();
+    const getOrCreateUser = trpc.getOrCreateUser.useMutation();
 
     const character = getCharacter.data as Character | null;
     const comments = getComments.data?.comments || [];
@@ -114,9 +119,42 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
         }
     };
 
+    // 대화 시작하기
+    const handleStartChat = async () => {
+        if (!character || isStartingChat) return;
+
+        setIsStartingChat(true);
+        try {
+            // userId 가져오기/생성
+            let currentUserId = userId;
+            if (!currentUserId) {
+                let visitorId = localStorage.getItem("unni-visitor-id");
+                if (!visitorId) {
+                    visitorId = crypto.randomUUID();
+                    localStorage.setItem("unni-visitor-id", visitorId);
+                }
+                const user = await getOrCreateUser.mutateAsync({ visitorId });
+                currentUserId = user.id;
+            }
+
+            // 새 대화방 생성
+            const conversation = await createConversation.mutateAsync({
+                userId: currentUserId,
+                characterId: character.id,
+            });
+
+            onClose();
+            router.push(`/chat/${conversation.id}`);
+        } catch (error) {
+            console.error("대화 시작 실패:", error);
+        } finally {
+            setIsStartingChat(false);
+        }
+    };
+
     // 댓글 작성
     const handleSubmitComment = async () => {
-        if (!comment.trim()) return;
+        if (!comment.trim() || !userId) return;
 
         setIsSubmitting(true);
         try {
@@ -174,7 +212,7 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
     if (!isOpen && !isAnimating) return null;
 
     return (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-[60]">
             {/* 백드롭 */}
             <div
                 className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0"
@@ -185,7 +223,7 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
             {/* Bottom Sheet */}
             <div
                 ref={sheetRef}
-                className={`absolute bottom-0 inset-x-0 mx-auto w-full max-w-[390px] max-h-[90vh] bg-gray-900 rounded-t-3xl overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isVisible ? "translate-y-0" : "translate-y-full"
+                className={`absolute bottom-12 inset-x-0 mx-auto w-full max-w-[390px] max-h-[calc(90vh-48px)] bg-black border border-white/10 rounded-t-3xl overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isVisible ? "translate-y-0" : "translate-y-full"
                     }`}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
@@ -284,6 +322,17 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
                                 <p className="text-white italic">"{character.tagline}"</p>
                             </div>
                         )}
+
+                        {/* 대화 시작 버튼 */}
+                        <div className="px-4 mt-4">
+                            <button
+                                onClick={handleStartChat}
+                                disabled={isStartingChat}
+                                className="w-full py-3.5 bg-black border border-[#E30A9E] text-white hover:bg-black active:bg-[#943576] disabled:opacity-50 rounded-xl font-medium text-base"
+                            >
+                                {isStartingChat ? "대화방 생성 중..." : "💬 대화 시작하기"}
+                            </button>
+                        </div>
 
                         {/* 소개 섹션 */}
                         <div className="px-4 py-6">
