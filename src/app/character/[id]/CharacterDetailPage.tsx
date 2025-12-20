@@ -133,7 +133,7 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
 
     if (getCharacter.isLoading) {
         return (
-            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+            <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
             </div>
         );
@@ -141,11 +141,11 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
 
     if (!character) {
         return (
-            <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-white">
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
                 <p className="text-xl mb-4">캐릭터를 찾을 수 없어요 😢</p>
                 <button
                     onClick={() => router.push("/")}
-                    className="px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg"
+                    className="px-4 py-2 bg-black border border-brand text-brand hover:bg-brand/10 rounded-lg"
                 >
                     홈으로 돌아가기
                 </button>
@@ -278,7 +278,7 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
                                     <button
                                         onClick={handleSubmitComment}
                                         disabled={isSubmitting || !comment.trim()}
-                                        className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white text-sm font-medium"
+                                        className="px-4 py-2 bg-black border border-brand text-brand hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium"
                                     >
                                         {isSubmitting ? "..." : "작성"}
                                     </button>

@@ -439,7 +439,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
 
                 {/* 선택 모드 툴바 */}
                 {selectMode && (
-                    <div className="sticky top-[60px] z-10 flex items-center justify-between px-4 py-2 bg-pink-600/90 backdrop-blur-md">
+                    <div className="sticky top-[60px] z-10 flex items-center justify-between px-4 py-2 bg-black/90 border-b border-brand backdrop-blur-md">
                         <span className="text-white text-sm">
                             {selectedIds.size}개 선택됨
                         </span>

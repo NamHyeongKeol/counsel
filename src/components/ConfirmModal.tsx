@@ -50,7 +50,7 @@ export function ConfirmModal({
         >
             <div
                 ref={modalRef}
-                className="bg-gray-900 rounded-2xl p-6 mx-4 max-w-[320px] w-full border border-white/10 shadow-2xl"
+                className="bg-black rounded-2xl p-6 mx-4 max-w-[320px] w-full border border-white/10 shadow-2xl"
             >
                 {title && (
                     <h3 className="text-white font-semibold text-lg mb-2">{title}</h3>
@@ -65,9 +65,9 @@ export function ConfirmModal({
                     </button>
                     <button
                         onClick={onConfirm}
-                        className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${danger
-                                ? "bg-red-500 hover:bg-red-600 text-white"
-                                : "bg-pink-500 hover:bg-pink-600 text-white"
+                        className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors bg-black border ${danger
+                            ? "border-red-500 text-red-400 hover:bg-red-500/10"
+                            : "border-brand text-brand hover:bg-brand/10"
                             }`}
                     >
                         {confirmText}

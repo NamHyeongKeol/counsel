@@ -139,7 +139,7 @@ export function ConversationList({
                         <p className="mb-4">대화가 없어요</p>
                         <button
                             onClick={handleNewConversation}
-                            className="px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg text-white text-sm"
+                            className="px-4 py-2 bg-black border border-brand text-brand hover:bg-brand/10 rounded-lg text-sm"
                         >
                             + 새 대화 시작
                         </button>

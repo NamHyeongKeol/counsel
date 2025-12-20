@@ -109,7 +109,7 @@ export function MessageBubble({
                     <div className={cn(
                         "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
                         isSelected
-                            ? "bg-pink-500 border-pink-500"
+                            ? "bg-brand border-brand"
                             : "border-white/40 hover:border-white/60"
                     )}>
                         {isSelected && (
@@ -128,7 +128,7 @@ export function MessageBubble({
                     isUser
                         ? "bg-white/10 backdrop-blur-sm text-white rounded-tr-sm border border-white/10"
                         : "bg-white/10 backdrop-blur-sm text-white rounded-tl-sm border border-white/10",
-                    isSelected && "ring-2 ring-pink-400"
+                    isSelected && "ring-2 ring-brand"
                 )}
             >
                 {isLoading ? (

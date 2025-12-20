@@ -358,7 +358,7 @@ export function ChatSidePanel({
             {showTitleEdit && (
                 <div className="fixed inset-0 z-60 flex items-center justify-center">
                     <div className="absolute inset-0 bg-black/60" onClick={() => setShowTitleEdit(false)} />
-                    <div className="relative w-full max-w-sm mx-4 bg-gray-900 rounded-2xl p-6">
+                    <div className="relative w-full max-w-sm mx-4 bg-black border border-white/10 rounded-2xl p-6">
                         <h3 className="text-white font-bold mb-4">채팅방 제목 수정</h3>
                         <input
                             type="text"
@@ -377,7 +377,7 @@ export function ChatSidePanel({
                             </button>
                             <button
                                 onClick={handleTitleUpdate}
-                                className="flex-1 py-2 bg-pink-600 text-white rounded-lg"
+                                className="flex-1 py-2 bg-black border border-brand text-brand hover:bg-brand/10 rounded-lg"
                             >
                                 저장
                             </button>

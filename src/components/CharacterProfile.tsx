@@ -417,7 +417,7 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
                                     <button
                                         onClick={handleSubmitComment}
                                         disabled={isSubmitting || !comment.trim()}
-                                        className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white text-sm font-medium"
+                                        className="px-4 py-2 bg-black border border-brand text-brand hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium"
                                     >
                                         {isSubmitting ? "..." : "작성"}
                                     </button>
