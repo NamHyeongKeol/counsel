@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
             const charDetails: string[] = [];
             if (character.name) charDetails.push(`이름: ${character.name}`);
             if (character.age) charDetails.push(`나이: ${character.age}세`);
+            if (character.gender) charDetails.push(`성별: ${character.gender === "male" ? "남성" : "여성"}`);
             if (character.tagline) charDetails.push(`한 줄 소개: ${character.tagline}`);
             if (character.introduction) charDetails.push(`소개:\n${character.introduction}`);
 
