@@ -163,26 +163,28 @@ export function MessageBubble({
                 {createdAt && !isLoading && (
                     <>
                         <div className="flex items-center justify-end gap-2 mt-1 flex-wrap">
-                            {/* Assistant 메시지: 어드민은 상세 정보, 일반 유저는 0원 표시 */}
+                            {/* Assistant 메시지: 모델명은 항상 표시, 토큰/가격은 어드민만 */}
                             {!isUser && model && (
-                                isAdmin ? (
-                                    <span className="text-[10px] text-white/40 flex gap-1 items-center">
-                                        <span>{displayModelName}</span>
-                                        {inputTokens != null && outputTokens != null && (
-                                            <span>· {inputTokens}/{outputTokens}</span>
-                                        )}
-                                        {cost != null && (
-                                            <span className="text-pink-400/60 font-medium">
-                                                · ${cost.toFixed(4)}
-                                                <span className="ml-1 text-[9px] opacity-70">
-                                                    (약 {Math.round(cost * CURRENT_EXCHANGE_RATE)}원)
+                                <span className="text-[10px] text-white/40 flex gap-1 items-center">
+                                    <span>{displayModelName}</span>
+                                    {isAdmin ? (
+                                        <>
+                                            {inputTokens != null && outputTokens != null && (
+                                                <span>· {inputTokens}/{outputTokens}</span>
+                                            )}
+                                            {cost != null && (
+                                                <span className="text-pink-400/60 font-medium">
+                                                    · ${cost.toFixed(4)}
+                                                    <span className="ml-1 text-[9px] opacity-70">
+                                                        (약 {Math.round(cost * CURRENT_EXCHANGE_RATE)}원)
+                                                    </span>
                                                 </span>
-                                            </span>
-                                        )}
-                                    </span>
-                                ) : (
-                                    <span className="text-[10px] text-white/40">0원</span>
-                                )
+                                            )}
+                                        </>
+                                    ) : (
+                                        <span>· 0원</span>
+                                    )}
+                                </span>
                             )}
                             <span className={cn(
                                 "text-[10px]",
