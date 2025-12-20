@@ -241,8 +241,14 @@ export function CharacterDetailContent({
                         <div className="absolute top-4 left-4 flex items-center gap-2">
                             <span className="px-2 py-1 bg-black/40 backdrop-blur rounded text-white text-sm font-medium">
                                 👤 {character.name}
-                                {character.age && <span className="text-white/70 ml-1">({character.age})</span>}
-                                {character.gender && <span className="text-white/70 ml-1">{character.gender === "male" ? "♂" : "♀"}</span>}
+                                {(character.age || character.gender) && (
+                                    <span className="text-white/70 ml-1">
+                                        ({[
+                                            character.age,
+                                            character.gender === "male" ? "♂" : character.gender === "female" ? "♀" : null
+                                        ].filter(Boolean).join(", ")})
+                                    </span>
+                                )}
                             </span>
                         </div>
 
