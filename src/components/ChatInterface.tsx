@@ -279,6 +279,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                                             model: data.model,
                                             inputTokens: data.inputTokens,
                                             outputTokens: data.outputTokens,
+                                            cost: data.cost,
                                         }
                                         : m
                                 ));
