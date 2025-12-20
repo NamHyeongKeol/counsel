@@ -399,23 +399,17 @@ export const appRouter = router({
         }),
 
 
-    // 임시 유저 생성 또는 조회
+    // 임시 유저 생성 또는 조회 (upsert로 race condition 방지)
     getOrCreateUser: publicProcedure
         .input(z.object({ visitorId: z.string() }))
         .mutation(async ({ ctx, input }) => {
-            let user = await ctx.prisma.user.findUnique({
+            return ctx.prisma.user.upsert({
                 where: { id: input.visitorId },
+                update: {}, // 이미 존재하면 아무것도 업데이트하지 않음
+                create: {
+                    id: input.visitorId,
+                },
             });
-
-            if (!user) {
-                user = await ctx.prisma.user.create({
-                    data: {
-                        id: input.visitorId,
-                    },
-                });
-            }
-
-            return user;
         }),
 
     // 유저를 어드민으로 설정 (/admin 접속 시 호출)

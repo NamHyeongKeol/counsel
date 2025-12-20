@@ -37,11 +37,31 @@ interface MessageBubbleProps {
     isAdmin?: boolean;
 }
 
+// 한국어 조사 "이/가" 처리 함수
+function getSubjectParticle(name: string): string {
+    if (!name || name.length === 0) return "";
+
+    const lastChar = name[name.length - 1];
+    const code = lastChar.charCodeAt(0);
+
+    // 한글 유니코드 범위: 0xAC00 ~ 0xD7A3
+    if (code < 0xAC00 || code > 0xD7A3) {
+        // 한국어가 아니면 조사 없음
+        return "";
+    }
+
+    // 받침 계산: (code - 0xAC00) % 28
+    // 0이면 받침 없음, 나머지는 받침 있음
+    const hasJongseong = (code - 0xAC00) % 28 !== 0;
+    return hasJongseong ? "이" : "가";
+}
+
 // 통통 튀는 로딩 애니메이션 컴포넌트
-function LoadingDots() {
+function LoadingDots({ characterName }: { characterName: string }) {
+    const particle = getSubjectParticle(characterName);
     return (
         <span className="inline-flex items-center gap-1">
-            언니가 생각하고 있어요
+            {characterName}{particle} 생각하고 있어요
             <span className="inline-flex gap-1 ml-1">
                 <span className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '0.6s' }} />
                 <span className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '150ms', animationDuration: '0.6s' }} />
@@ -136,7 +156,7 @@ export function MessageBubble({
             >
                 {isLoading ? (
                     <p className="text-sm leading-relaxed">
-                        <LoadingDots />
+                        <LoadingDots characterName={characterName} />
                     </p>
                 ) : (
                     <div className="text-sm leading-relaxed">
