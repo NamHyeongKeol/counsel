@@ -304,7 +304,7 @@ export function CharacterDetailContent({
             </div>
 
             {/* 댓글 섹션 */}
-            <div className="px-4 pb-6">
+            <div className="px-4 pt-6 pb-6 mt-4 border-t border-white/10">
                 <div className="flex items-center gap-2 mb-4">
                     <span className="font-bold text-white">댓글</span>
                     <span className="px-2 py-0.5 bg-white/10 rounded-full text-sm text-white/70">
