@@ -645,6 +645,7 @@ export const appRouter = router({
             introduction: z.string(),
             systemPrompt: z.string(),
             greeting: z.string(),
+            age: z.number().int().positive().optional(),
             imageUrls: z.array(z.string()).optional(),
         }))
         .mutation(async ({ ctx, input }) => {
@@ -656,6 +657,7 @@ export const appRouter = router({
                     introduction: input.introduction,
                     systemPrompt: input.systemPrompt,
                     greeting: input.greeting,
+                    age: input.age,
                     isPublic: true, // 새 캐릭터는 기본 공개
                 },
             });
@@ -691,6 +693,7 @@ export const appRouter = router({
             introduction: z.string().optional(),
             systemPrompt: z.string().optional(),
             greeting: z.string().optional(),
+            age: z.number().int().positive().nullable().optional(),
             isActive: z.boolean().optional(),
             isPublic: z.boolean().optional(),
         }))

@@ -12,6 +12,7 @@ interface Character {
     introduction: string;
     systemPrompt: string;
     greeting: string;
+    age?: number | null;
     isActive: boolean;
     isPublic: boolean;
     createdAt: Date;
@@ -70,6 +71,7 @@ export default function AdminPage() {
             introduction: editData.introduction,
             systemPrompt: editData.systemPrompt,
             greeting: editData.greeting,
+            age: editData.age,
             isActive: editData.isActive,
         });
         setEditingId(null);
@@ -109,6 +111,7 @@ export default function AdminPage() {
             introduction: newCharacter.introduction,
             systemPrompt: newCharacter.systemPrompt,
             greeting: newCharacter.greeting,
+            age: newCharacter.age || undefined,
             imageUrls: newCharacter.imageUrls?.filter(url => url.trim()) || [],
         });
         setNewCharacter({
@@ -427,6 +430,17 @@ function CharacterForm({
                         onChange={(e) => onChange({ ...data, tagline: e.target.value })}
                         placeholder="언니가 다 알려줄게~"
                         className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm text-gray-400 mb-1">나이</label>
+                    <input
+                        type="number"
+                        value={data.age || ""}
+                        onChange={(e) => onChange({ ...data, age: e.target.value ? parseInt(e.target.value) : undefined })}
+                        placeholder="25"
+                        className="w-32 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm"
                     />
                 </div>
 
