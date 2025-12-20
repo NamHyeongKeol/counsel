@@ -222,15 +222,24 @@ export default function AdminPage() {
         try {
             let charactersToCreate: any[] = [];
 
-            // JSONL 형식인지 확인 (줄바꿈으로 구분된 JSON 객체들)
             const trimmed = jsonText.trim();
+
             if (trimmed.startsWith('[')) {
-                // JSON Array
+                // JSON Array (formatted 포함)
                 charactersToCreate = JSON.parse(trimmed);
+            } else if (trimmed.startsWith('{')) {
+                // 단일 JSON 객체 또는 JSONL 구분
+                // 먼저 전체를 단일 객체로 파싱 시도
+                try {
+                    const singleObj = JSON.parse(trimmed);
+                    charactersToCreate = [singleObj];
+                } catch {
+                    // 실패하면 JSONL로 처리 (한 줄에 하나씩 JSON)
+                    const lines = trimmed.split('\n').filter(line => line.trim().startsWith('{'));
+                    charactersToCreate = lines.map(line => JSON.parse(line.trim()));
+                }
             } else {
-                // JSONL (각 줄이 JSON 객체)
-                const lines = trimmed.split('\n').filter(line => line.trim());
-                charactersToCreate = lines.map(line => JSON.parse(line.trim()));
+                throw new Error('JSON 형식이 올바르지 않습니다. [ 또는 { 로 시작해야 합니다.');
             }
 
             if (!Array.isArray(charactersToCreate)) {
