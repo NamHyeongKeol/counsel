@@ -80,6 +80,17 @@ export function ChatSidePanel({
         }
     }, [isOpen]);
 
+    // ESC 키로 닫기
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && isOpen) {
+                onClose();
+            }
+        };
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, onClose]);
+
     // 스와이프 핸들러
     const handleTouchStart = (e: React.TouchEvent) => {
         startX.current = e.touches[0].clientX;

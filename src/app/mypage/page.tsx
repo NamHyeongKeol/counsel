@@ -78,28 +78,28 @@ export default function MyPage() {
                 {/* 컨텐츠 */}
                 <main className="flex-1 overflow-y-auto pb-20 p-4">
                     {user ? (
-                        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                             {/* 프로필 아바타 */}
-                            <div className="flex flex-col items-center mb-6">
-                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center mb-3">
-                                    <span className="text-3xl">
+                            <div className="flex flex-col items-center mb-4">
+                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center mb-2">
+                                    <span className="text-xl">
                                         {user.gender === "male" ? "🙋‍♂️" : "🙋‍♀️"}
                                     </span>
                                 </div>
-                                <h2 className="text-xl font-bold text-white">
+                                <h2 className="text-base font-semibold text-white">
                                     {user.name || "이름 없음"}
                                 </h2>
                             </div>
 
                             {/* 정보 */}
-                            <div className="space-y-3">
-                                <div className="flex justify-between py-3 border-b border-white/10">
-                                    <span className="text-white/60">성별</span>
-                                    <span className="text-white">{getGenderText(user.gender)}</span>
+                            <div className="space-y-0">
+                                <div className="flex justify-between py-2.5 border-b border-white/5">
+                                    <span className="text-white/50 text-sm">성별</span>
+                                    <span className="text-white text-sm">{getGenderText(user.gender)}</span>
                                 </div>
-                                <div className="flex justify-between py-3 border-b border-white/10">
-                                    <span className="text-white/60">나이</span>
-                                    <span className="text-white">
+                                <div className="flex justify-between py-2.5">
+                                    <span className="text-white/50 text-sm">나이</span>
+                                    <span className="text-white text-sm">
                                         {user.age ? `만 ${user.age}세` : "-"}
                                     </span>
                                 </div>
@@ -108,7 +108,7 @@ export default function MyPage() {
                             {/* 수정 버튼 */}
                             <button
                                 onClick={() => setShowEditModal(true)}
-                                className="w-full mt-6 py-3 bg-black border border-brand text-white hover:bg-black active:bg-brand-active rounded-xl font-medium"
+                                className="w-full mt-4 py-2.5 bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 rounded-lg"
                             >
                                 프로필 수정
                             </button>
@@ -169,56 +169,74 @@ function EditProfileModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <div className="w-full max-w-sm mx-4 bg-gradient-to-br from-purple-900/90 to-pink-900/90 rounded-2xl p-6 border border-white/10 shadow-2xl">
-                <h2 className="text-xl font-bold text-white text-center mb-6">
-                    프로필 수정
-                </h2>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm">
+            <div className="w-full max-w-[390px] mx-auto bg-black rounded-t-2xl border-t border-white/10 relative">
+                {/* 닫기 버튼 */}
+                <button
+                    onClick={onCancel}
+                    className="absolute top-3 right-3 text-white/50 hover:text-white"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
-                <div className="space-y-4">
-                    {/* 이름 */}
+                {/* 헤더 */}
+                <div className="px-4 pt-4 pb-3">
+                    <h2 className="text-base font-semibold text-white">내 계정 수정하기</h2>
+                </div>
+
+                <div className="px-4 pb-6 space-y-4">
+                    {/* 닉네임 */}
                     <div>
-                        <label className="block text-white/60 text-sm mb-2">이름</label>
+                        <label className="block text-white/50 text-xs mb-1.5">닉네임</label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="이름 또는 닉네임"
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-pink-500"
+                            placeholder="닉네임"
+                            className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-brand"
                             autoFocus
                         />
                     </div>
 
                     {/* 성별 */}
                     <div>
-                        <label className="block text-white/60 text-sm mb-2">성별</label>
-                        <div className="flex gap-3">
+                        <label className="block text-white/50 text-xs mb-1.5">성별</label>
+                        <div className="flex gap-2">
                             <button
                                 type="button"
                                 onClick={() => setGender("male")}
-                                className={`flex-1 py-3 rounded-xl border transition-all ${gender === "male"
-                                    ? "bg-blue-500/30 border-blue-400 text-white"
-                                    : "bg-white/10 border-white/20 text-white/60"
+                                className={`flex-1 py-2.5 rounded-lg border text-sm transition-all ${gender === "male"
+                                    ? "bg-white/10 border-white/30 text-white"
+                                    : "bg-transparent border-white/10 text-white/50"
                                     }`}
                             >
-                                🙋‍♂️ 남자
+                                남성
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setGender("female")}
-                                className={`flex-1 py-3 rounded-xl border transition-all ${gender === "female"
-                                    ? "bg-pink-500/30 border-pink-400 text-white"
-                                    : "bg-white/10 border-white/20 text-white/60"
+                                className={`flex-1 py-2.5 rounded-lg border text-sm transition-all ${gender === "female"
+                                    ? "bg-white/10 border-white/30 text-white"
+                                    : "bg-transparent border-white/10 text-white/50"
                                     }`}
                             >
-                                🙋‍♀️ 여자
+                                여성
+                            </button>
+                            <button
+                                type="button"
+                                disabled
+                                className="flex-1 py-2.5 rounded-lg border text-sm bg-transparent border-white/10 text-white/30 cursor-not-allowed"
+                            >
+                                기타
                             </button>
                         </div>
                     </div>
 
                     {/* 나이 */}
                     <div>
-                        <label className="block text-white/60 text-sm mb-2">만 나이</label>
+                        <label className="block text-white/50 text-xs mb-1.5">만 나이</label>
                         <input
                             type="number"
                             value={age}
@@ -226,25 +244,17 @@ function EditProfileModal({
                             placeholder="나이"
                             min="1"
                             max="120"
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-pink-500 text-center"
+                            className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-brand"
                         />
                     </div>
-                </div>
 
-                {/* 버튼 */}
-                <div className="flex gap-3 mt-6">
-                    <button
-                        onClick={onCancel}
-                        className="flex-1 py-3 bg-white/10 text-white/70 rounded-xl hover:bg-white/20"
-                    >
-                        취소
-                    </button>
+                    {/* 저장 버튼 */}
                     <button
                         onClick={handleSubmit}
                         disabled={!name.trim() || isSubmitting}
-                        className="flex-1 py-3 bg-black border border-brand text-white hover:bg-black active:bg-brand-active font-medium rounded-xl disabled:opacity-50"
+                        className="w-full py-3 mt-2 bg-white text-black text-sm font-medium rounded-lg hover:bg-white/90 disabled:opacity-50"
                     >
-                        {isSubmitting ? "저장 중..." : "저장"}
+                        {isSubmitting ? "저장 중..." : "저장하기"}
                     </button>
                 </div>
             </div>
