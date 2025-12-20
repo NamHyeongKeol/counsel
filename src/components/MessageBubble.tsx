@@ -136,7 +136,7 @@ export function MessageBubble({
                         <LoadingDots />
                     </p>
                 ) : (
-                    <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none prose-p:my-1 prose-p:leading-relaxed prose-strong:text-pink-300 prose-em:text-purple-300 prose-a:text-blue-400 prose-a:underline prose-a:underline-offset-2 hover:prose-a:text-blue-300">
+                    <div className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none prose-p:my-1 prose-p:leading-relaxed prose-strong:text-pink-300 prose-em:text-gray-400 prose-a:text-blue-400 prose-a:underline prose-a:underline-offset-2 hover:prose-a:text-blue-300">
                         <ReactMarkdown
                             remarkPlugins={[remarkBreaks]}
                             components={{

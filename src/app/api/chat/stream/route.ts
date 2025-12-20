@@ -109,7 +109,16 @@ export async function POST(request: NextRequest) {
         });
 
         // 캐릭터 기본 프롬프트
-        const basePrompt = conversation?.character?.systemPrompt || "당신은 친절한 상담사입니다.";
+        const characterPrompt = conversation?.character?.systemPrompt || "당신은 친절한 상담사입니다.";
+
+        // 마크다운 포맷팅 가이드 (모든 AI 모델에 적용)
+        const formattingGuide = `## 응답 포맷 가이드
+- **볼드 처리**: 중요한 내용은 **별표 두 개로 감싸기**
+- *이탤릭/행동 묘사*: 행동이나 상황 묘사는 *별표 한 개로 감싸기* (회색 이탤릭체로 표시됨)
+- 문단 구분: 엔터 두 번으로 문단 구분 (가독성 향상)
+
+`;
+        const basePrompt = formattingGuide + characterPrompt;
 
         // 유저 정보 빌드
         const user = conversation?.user;
