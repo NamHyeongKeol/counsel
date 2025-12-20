@@ -108,7 +108,7 @@ export default function MyPage() {
                             {/* 수정 버튼 */}
                             <button
                                 onClick={() => setShowEditModal(true)}
-                                className="w-full mt-6 py-3 bg-black border border-[#E30A9E] text-white hover:bg-black active:bg-[#943576] rounded-xl font-medium"
+                                className="w-full mt-6 py-3 bg-black border border-brand text-white hover:bg-black active:bg-brand-active rounded-xl font-medium"
                             >
                                 프로필 수정
                             </button>
@@ -242,7 +242,7 @@ function EditProfileModal({
                     <button
                         onClick={handleSubmit}
                         disabled={!name.trim() || isSubmitting}
-                        className="flex-1 py-3 bg-black border border-[#E30A9E] text-white hover:bg-black active:bg-[#943576] font-medium rounded-xl disabled:opacity-50"
+                        className="flex-1 py-3 bg-black border border-brand text-white hover:bg-black active:bg-brand-active font-medium rounded-xl disabled:opacity-50"
                     >
                         {isSubmitting ? "저장 중..." : "저장"}
                     </button>

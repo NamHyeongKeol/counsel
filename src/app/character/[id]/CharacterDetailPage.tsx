@@ -235,7 +235,7 @@ export function CharacterDetailPage({ id, isSlug }: CharacterDetailPageProps) {
                         <button
                             onClick={handleStartChat}
                             disabled={isStartingChat}
-                            className="w-full py-3 bg-black border border-[#E30A9E] text-white hover:bg-black active:bg-[#943576] disabled:opacity-50 rounded-xl font-medium mb-6"
+                            className="w-full py-3 bg-black border border-brand text-white hover:bg-black active:bg-brand-active disabled:opacity-50 rounded-xl font-medium mb-6"
                         >
                             {isStartingChat ? "대화방 생성 중..." : "💬 대화 시작하기"}
                         </button>

@@ -186,7 +186,7 @@ export function ChatSidePanel({
             >
                 {/* 헤더 */}
                 <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
-                    <h2 className="text-white font-bold">설정</h2>
+                    <h2 className="text-white font-bold">채팅방 메뉴</h2>
                     <button
                         onClick={onClose}
                         className="p-2 text-white/70 hover:text-white"
@@ -204,7 +204,7 @@ export function ChatSidePanel({
                         <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider mb-3">MODEL</p>
                         <button
                             onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-                            className="w-full flex items-center justify-between px-4 py-3 bg-purple-600/80 rounded-lg text-white"
+                            className="w-full flex items-center justify-between px-4 py-3 bg-transparent border border-brand rounded-lg text-white"
                         >
                             <span className="flex items-center gap-2">
                                 <span>✨</span>
@@ -220,7 +220,7 @@ export function ChatSidePanel({
                                     <button
                                         key={id}
                                         onClick={() => handleModelChange(id)}
-                                        className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between hover:bg-white/10 ${currentModel === id ? "text-purple-400" : "text-white/80"}`}
+                                        className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between hover:bg-white/10 ${currentModel === id ? "text-brand" : "text-white/80"}`}
                                     >
                                         <span>{AI_MODELS[id].name}</span>
                                         {currentModel === id && (
