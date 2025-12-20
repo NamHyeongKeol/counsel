@@ -251,13 +251,6 @@ export function CharacterDetailContent({
                                 )}
                             </span>
                         </div>
-
-                        {/* 좋아요 버튼 */}
-                        <button className="absolute bottom-4 right-4 w-12 h-12 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-colors">
-                            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                        </button>
                     </div>
                 ) : (
                     <div className="aspect-square bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
