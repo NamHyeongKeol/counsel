@@ -169,8 +169,8 @@ export function CharacterDetailContent({
     // 로딩 상태
     if (getCharacterQuery.isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-[300px] bg-black">
-                <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center justify-center h-full pt-20 bg-black">
+                <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
