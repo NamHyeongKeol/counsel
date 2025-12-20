@@ -245,8 +245,8 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
                 </button>
 
                 {getCharacter.isLoading ? (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="flex items-center justify-center h-40">
+                        <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : character ? (
                     <div className="flex-1 overflow-y-auto">

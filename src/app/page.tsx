@@ -62,12 +62,16 @@ export default function Home() {
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex items-center justify-center">
-      {showOnboarding ? (
-        <OnboardingModal onComplete={handleOnboardingComplete} />
-      ) : (
-        <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
-      )}
+    <div className="fixed inset-0 bg-black">
+      <div className="flex flex-col h-full w-full max-w-[390px] mx-auto">
+        {showOnboarding ? (
+          <OnboardingModal onComplete={handleOnboardingComplete} />
+        ) : (
+          <div className="flex items-center justify-center h-40">
+            <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

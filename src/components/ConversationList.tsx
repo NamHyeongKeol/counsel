@@ -131,8 +131,8 @@ export function ConversationList({
             {/* 대화 목록 */}
             <div className="flex-1 overflow-y-auto">
                 {getConversations.isLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    <div className="flex items-center justify-center h-40">
+                        <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : conversations.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-white/50">
