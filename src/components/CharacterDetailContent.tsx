@@ -279,10 +279,10 @@ export function CharacterDetailContent({
                 </button>
             </div>
 
-            {/* 소개 섹션 - 브랜드 컬러 */}
-            <div className="px-4 py-6">
+            {/* 소개 섹션 */}
+            <div className="mx-4 my-4 bg-white/5 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 bg-brand/20 rounded-full text-sm text-brand flex items-center gap-1.5">
+                    <span className="px-3 py-1 bg-white/10 rounded-full text-sm text-white/70 flex items-center gap-1.5">
                         <User className="w-4 h-4" /> 소개
                     </span>
                 </div>
@@ -291,14 +291,14 @@ export function CharacterDetailContent({
                 </div>
             </div>
 
-            {/* 첫 인사 섹션 - 보라색 계열 */}
-            <div className="px-4 py-6 border-t border-white/10">
+            {/* 첫 인사 섹션 */}
+            <div className="mx-4 my-4 bg-white/5 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 bg-purple-500/20 rounded-full text-sm text-purple-400 flex items-center gap-1.5">
+                    <span className="px-3 py-1 bg-white/10 rounded-full text-sm text-white/70 flex items-center gap-1.5">
                         <MessageCircle className="w-4 h-4" /> 첫 인사
                     </span>
                 </div>
-                <div className="text-white/80 leading-relaxed whitespace-pre-wrap bg-white/5 rounded-lg p-4">
+                <div className="text-white/80 leading-relaxed whitespace-pre-wrap">
                     {character.greeting}
                 </div>
             </div>
