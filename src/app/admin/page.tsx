@@ -13,6 +13,7 @@ interface Character {
     systemPrompt: string;
     greeting: string;
     age?: number | null;
+    gender?: string | null;
     isActive: boolean;
     isPublic: boolean;
     createdAt: Date;
@@ -96,6 +97,7 @@ export default function AdminPage() {
             systemPrompt: editData.systemPrompt,
             greeting: editData.greeting,
             age: editData.age,
+            gender: editData.gender,
             isActive: editData.isActive,
         });
         setEditingId(null);
@@ -136,6 +138,7 @@ export default function AdminPage() {
             systemPrompt: newCharacter.systemPrompt,
             greeting: newCharacter.greeting,
             age: newCharacter.age || undefined,
+            gender: newCharacter.gender || undefined,
             imageUrls: newCharacter.imageUrls?.filter(url => url.trim()) || [],
         });
         setNewCharacter({
@@ -280,6 +283,11 @@ export default function AdminPage() {
                                         {character.age && (
                                             <span className="ml-1 text-gray-400 text-sm">
                                                 ({character.age}세)
+                                            </span>
+                                        )}
+                                        {character.gender && (
+                                            <span className="ml-1 text-gray-400 text-sm">
+                                                {character.gender === "male" ? "♂" : "♀"}
                                             </span>
                                         )}
                                         <span className="ml-2 text-gray-500 text-sm">
@@ -471,6 +479,19 @@ function CharacterForm({
                         placeholder="25"
                         className="w-32 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm"
                     />
+                </div>
+
+                <div>
+                    <label className="block text-sm text-gray-400 mb-1">성별</label>
+                    <select
+                        value={data.gender || ""}
+                        onChange={(e) => onChange({ ...data, gender: e.target.value || undefined })}
+                        className="w-40 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm"
+                    >
+                        <option value="">선택 안함</option>
+                        <option value="female">여성</option>
+                        <option value="male">남성</option>
+                    </select>
                 </div>
 
                 {/* 이미지 관리 */}
