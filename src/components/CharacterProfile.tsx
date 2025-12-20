@@ -92,7 +92,7 @@ export function CharacterProfile({ characterId, userId, isOpen, onClose }: Chara
             {/* Bottom Sheet */}
             <div
                 ref={sheetRef}
-                className={`absolute bottom-12 inset-x-0 mx-auto w-full max-w-[390px] max-h-[calc(90vh-48px)] min-h-[400px] bg-black border border-white/10 rounded-t-3xl overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isVisible ? "translate-y-0" : "translate-y-full"
+                className={`absolute bottom-12 inset-x-0 mx-auto w-full max-w-[390px] h-[calc(90vh-48px)] bg-black border border-white/10 rounded-t-3xl overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isVisible ? "translate-y-0" : "translate-y-full"
                     }`}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
