@@ -116,11 +116,10 @@ export default function ExplorePage() {
                             </span>
                         )}
                     </div>
-                    {character.tagline && (
-                        <p className="text-white/70 text-xs mt-1 line-clamp-2">
-                            {character.tagline}
-                        </p>
-                    )}
+                    {/* 항상 두 줄 높이 확보 */}
+                    <p className="text-white/70 text-xs mt-1 line-clamp-2 min-h-[2.5em]">
+                        {character.tagline || "\u00A0"}
+                    </p>
                 </div>
             </div>
         </button>
