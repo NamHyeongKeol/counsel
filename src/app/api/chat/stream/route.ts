@@ -48,23 +48,34 @@ async function generateConversationTitle(
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { conversationId, content } = body;
+        const { conversationId, content, isContinue } = body;
 
-        if (!conversationId || !content) {
-            return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        if (!conversationId) {
+            return new Response(JSON.stringify({ error: "Missing conversationId" }), {
                 status: 400,
                 headers: { "Content-Type": "application/json" },
             });
         }
 
-        // 사용자 메시지 저장
-        const userMessage = await prisma.message.create({
-            data: {
-                conversationId,
-                role: "user",
-                content,
-            },
-        });
+        // isContinue가 아닌 경우에만 content 필수
+        if (!isContinue && !content) {
+            return new Response(JSON.stringify({ error: "Missing content" }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+            });
+        }
+
+        // isContinue가 아닌 경우에만 사용자 메시지 저장
+        let userMessage = null;
+        if (!isContinue && content) {
+            userMessage = await prisma.message.create({
+                data: {
+                    conversationId,
+                    role: "user",
+                    content,
+                },
+            });
+        }
 
         // 이전 대화 기록 조회
         const previousMessages = await prisma.message.findMany({
@@ -128,13 +139,15 @@ export async function POST(request: NextRequest) {
                 const encoder = new TextEncoder();
 
                 try {
-                    // userMessage ID 먼저 전송
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                        type: "userMessage",
-                        id: userMessage.id,
-                        content: userMessage.content,
-                        createdAt: userMessage.createdAt,
-                    })}\n\n`));
+                    // isContinue가 아닌 경우에만 userMessage ID 전송
+                    if (userMessage) {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                            type: "userMessage",
+                            id: userMessage.id,
+                            content: userMessage.content,
+                            createdAt: userMessage.createdAt,
+                        })}\n\n`));
+                    }
 
                     // AI Provider 스트리밍 호출 (systemPrompt 전달!)
                     await streamChat(

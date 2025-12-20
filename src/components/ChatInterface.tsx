@@ -194,20 +194,23 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || !conversationId || isStreaming) return;
+        if (!conversationId || isStreaming) return;
 
         const userInput = input.trim();
+        const isContinue = !userInput; // 빈 메시지면 계속 진행 모드
         setInput("");
         setIsStreaming(true);
 
-        // 임시 사용자 메시지 추가
-        const tempUserMsgId = `temp-${Date.now()}`;
-        setMessages((prev) => [...prev, {
-            id: tempUserMsgId,
-            role: "user",
-            content: userInput,
-            createdAt: new Date()
-        }]);
+        // 빈 메시지가 아닌 경우에만 임시 사용자 메시지 추가
+        const tempUserMsgId = isContinue ? null : `temp-${Date.now()}`;
+        if (!isContinue && tempUserMsgId) {
+            setMessages((prev) => [...prev, {
+                id: tempUserMsgId,
+                role: "user",
+                content: userInput,
+                createdAt: new Date()
+            }]);
+        }
 
         // 스트리밍 assistant 메시지 추가
         const streamingMsgId = "streaming";
@@ -223,7 +226,11 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
             const response = await fetch("/api/chat/stream", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ conversationId, content: userInput }),
+                body: JSON.stringify({
+                    conversationId,
+                    content: isContinue ? "" : userInput,
+                    isContinue
+                }),
             });
 
             if (!response.ok) throw new Error("Stream request failed");
@@ -568,9 +575,9 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                     </div>
                 </div>
 
-                {/* 입력 영역 */}
-                <div className="sticky bottom-0 z-10 p-2 bg-black/30 backdrop-blur-md border-t border-white/10">
-                    <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+                {/* 입력 영역 - 루모 스타일 */}
+                <div className="sticky bottom-0 z-10 p-3 bg-black/30 backdrop-blur-md border-t border-white/10">
+                    <form onSubmit={handleSubmit} className="flex items-end bg-white/10 border border-white/20 rounded-xl overflow-hidden focus-within:border-white/40 transition-colors">
                         <textarea
                             ref={textareaRef}
                             value={input}
@@ -578,16 +585,26 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                             onKeyDown={handleKeyDown}
                             placeholder="고민을 이야기해주세요..."
                             rows={1}
-                            className="flex-1 bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:border-pink-400 focus:outline-none rounded-lg px-4 py-2.5 resize-none min-h-[42px] max-h-[120px] text-sm leading-relaxed"
+                            className="flex-1 bg-transparent text-white placeholder:text-white/50 focus:outline-none px-4 py-3 resize-none min-h-[44px] max-h-[120px] text-sm leading-relaxed"
                             disabled={isStreaming}
                         />
-                        <Button
+                        <button
                             type="submit"
-                            disabled={!input.trim() || isStreaming}
-                            className="bg-black border border-brand text-white hover:bg-black active:bg-brand-active rounded-lg px-5 h-[42px] disabled:opacity-50 shrink-0"
+                            disabled={isStreaming}
+                            className="p-3 text-white/70 hover:text-white disabled:opacity-50 shrink-0 transition-colors"
                         >
-                            {isStreaming ? "..." : "전송"}
-                        </Button>
+                            {isStreaming ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : input.trim() ? (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M6 5l7 7-7 7" />
+                                </svg>
+                            )}
+                        </button>
                     </form>
                 </div>
             </div>

@@ -169,17 +169,18 @@ export function ChatSidePanel({
     if (!isOpen && !isAnimating) return null;
 
     return (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 flex justify-center">
             {/* 백드롭 */}
             <div
                 className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0"}`}
                 onClick={onClose}
             />
 
-            {/* 사이드 패널 */}
+            {/* 사이드 패널 - 390px 컨테이너 기준 */}
             <div
                 ref={panelRef}
-                className={`absolute top-0 bottom-0 right-0 w-4/5 bg-black border-l border-white/10 flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isVisible ? "translate-x-0" : "translate-x-full"}`}
+                className={`absolute top-0 bottom-0 w-[312px] max-w-[80vw] bg-black border-l border-white/10 flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isVisible ? "translate-x-0" : "translate-x-full"}`}
+                style={{ right: 'max(0px, calc(50% - 195px))' }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
