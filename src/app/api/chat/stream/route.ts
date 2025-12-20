@@ -109,7 +109,22 @@ export async function POST(request: NextRequest) {
         });
 
         // 캐릭터 기본 프롬프트
-        const characterPrompt = conversation?.character?.systemPrompt || "당신은 친절한 상담사입니다.";
+        const character = conversation?.character;
+        const characterPrompt = character?.systemPrompt || "당신은 친절한 상담사입니다.";
+
+        // 캐릭터 정보 빌드
+        let characterInfo = "";
+        if (character) {
+            const charDetails: string[] = [];
+            if (character.name) charDetails.push(`이름: ${character.name}`);
+            if (character.age) charDetails.push(`나이: ${character.age}세`);
+            if (character.tagline) charDetails.push(`한 줄 소개: ${character.tagline}`);
+            if (character.introduction) charDetails.push(`소개:\n${character.introduction}`);
+
+            if (charDetails.length > 0) {
+                characterInfo = `## 당신의 정보 (캐릭터)\n${charDetails.join("\n")}\n\n`;
+            }
+        }
 
         // 마크다운 포맷팅 가이드 (모든 AI 모델에 적용)
         const formattingGuide = `## 응답 포맷 가이드
@@ -118,7 +133,7 @@ export async function POST(request: NextRequest) {
 - 문단 구분: 엔터 두 번으로 문단 구분 (가독성 향상)
 
 `;
-        const basePrompt = formattingGuide + characterPrompt;
+        const basePrompt = characterInfo + formattingGuide + characterPrompt;
 
         // 유저 정보 빌드
         const user = conversation?.user;
@@ -134,7 +149,7 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 최종 시스템 프롬프트 = 캐릭터 프롬프트 + 유저 정보
+        // 최종 시스템 프롬프트 = 캐릭터 정보 + 포맷 가이드 + 캐릭터 프롬프트 + 유저 정보
         const systemPrompt = basePrompt + userContext;
         const modelId = (conversation?.model as AIModelId) || "gemini-3-flash-preview";
 
