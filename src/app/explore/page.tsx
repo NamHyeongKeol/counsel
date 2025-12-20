@@ -11,6 +11,7 @@ interface Character {
     slug: string;
     tagline: string | null;
     introduction: string;
+    age: number | null;
     images: { id: string; imageUrl: string }[];
     _count?: { conversations: number; comments: number };
     createdAt?: Date;
@@ -103,9 +104,14 @@ export default function ExplorePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                 {/* 텍스트 정보 */}
                 <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <h3 className="text-white font-bold text-base truncate">
-                        {character.name}
-                    </h3>
+                    <div className="flex items-center gap-1.5">
+                        <h3 className="text-white font-bold text-base truncate">
+                            {character.name}
+                        </h3>
+                        {character.age && (
+                            <span className="text-white/60 text-xs">({character.age})</span>
+                        )}
+                    </div>
                     {character.tagline && (
                         <p className="text-white/70 text-xs mt-1 line-clamp-2">
                             {character.tagline}
