@@ -112,7 +112,7 @@ export default function ExplorePage() {
                         </h3>
                         {(character.age || character.gender) && (
                             <span className="text-white/60 text-xs">
-                                ({character.age}{character.age && character.gender && ", "}{character.gender && (character.gender === "male" ? "♂" : "♀")})
+                                ({character.age}{character.age && character.gender && ", "}{character.gender && (character.gender === "male" ? "남" : "여")})
                             </span>
                         )}
                     </div>

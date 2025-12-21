@@ -376,7 +376,7 @@ export default function AdminPage() {
                                         )}
                                         {character.gender && (
                                             <span className="ml-1 text-gray-400 text-sm">
-                                                {character.gender === "male" ? "♂" : "♀"}
+                                                {character.gender === "male" ? "남" : "여"}
                                             </span>
                                         )}
                                         <span className="ml-2 text-gray-500 text-sm">

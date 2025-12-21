@@ -592,7 +592,7 @@ export function ChatInterface({ conversationId: initialConversationId, userId }:
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="고민을 이야기해주세요..."
+                            placeholder="편하게 털어놔보세요"
                             rows={1}
                             className="flex-1 bg-transparent text-white placeholder:text-white/50 focus:outline-none px-4 py-3 resize-none min-h-[44px] max-h-[120px] text-sm leading-relaxed"
                             disabled={isStreaming}

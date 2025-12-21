@@ -247,7 +247,7 @@ export function CharacterDetailContent({
                                     <span className="text-white/70 ml-1">
                                         ({[
                                             character.age,
-                                            character.gender === "male" ? "♂" : character.gender === "female" ? "♀" : null
+                                            character.gender === "male" ? "남" : character.gender === "female" ? "여" : null
                                         ].filter(Boolean).join(", ")})
                                     </span>
                                 )}

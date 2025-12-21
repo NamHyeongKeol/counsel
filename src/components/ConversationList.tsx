@@ -161,17 +161,17 @@ export function ConversationList({
                                         <img
                                             src={conv.character.images[0].imageUrl}
                                             alt={conv.character.name}
-                                            className="w-10 h-10 rounded-full object-cover shrink-0"
+                                            className="w-11 h-11 rounded-full object-cover shrink-0"
                                         />
                                     ) : (
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0">
-                                            <span className="text-white text-sm font-bold">
+                                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shrink-0">
+                                            <span className="text-white text-xs font-bold">
                                                 {conv.character?.name?.[0] || "언"}
                                             </span>
                                         </div>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-white font-medium truncate prose prose-invert prose-sm max-w-none prose-strong:text-pink-300 prose-p:inline">
+                                        <div className="text-white text-sm font-medium truncate prose prose-invert prose-sm max-w-none prose-strong:text-pink-300 prose-p:inline">
                                             {conv.character?.name || "언니"}
                                             {conv.title && (
                                                 <>
@@ -186,7 +186,7 @@ export function ConversationList({
                                                 </>
                                             )}
                                         </div>
-                                        <p className="text-white/50 text-sm truncate">
+                                        <p className="text-white/50 text-xs truncate">
                                             {getPreview(conv)}
                                         </p>
                                     </div>
