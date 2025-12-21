@@ -268,15 +268,6 @@ export function CharacterDetailContent({
                                 )}
                             </span>
                         </div>
-
-                        {/* 공유 버튼 */}
-                        <button
-                            onClick={handleShareLink}
-                            className="absolute top-4 right-4 p-2 bg-black/40 backdrop-blur rounded-full text-white hover:bg-black/60 transition-colors"
-                            title="링크 공유"
-                        >
-                            <Share2 className="w-5 h-5" />
-                        </button>
                     </div>
                 ) : (
                     <div className="aspect-square bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
@@ -295,14 +286,21 @@ export function CharacterDetailContent({
                 </div>
             )}
 
-            {/* 대화 시작 버튼 */}
-            <div className="px-4 mt-4">
+            {/* 대화 시작 버튼 + 공유 버튼 */}
+            <div className="px-4 mt-4 flex gap-2">
                 <button
                     onClick={handleStartChat}
                     disabled={isStartingChat}
-                    className="w-full py-3.5 bg-black border border-brand text-white hover:bg-black active:bg-brand-active disabled:opacity-50 rounded-xl font-medium text-base"
+                    className="flex-1 py-3.5 bg-black border border-brand text-white hover:bg-black active:bg-brand-active disabled:opacity-50 rounded-xl font-medium text-base"
                 >
                     {isStartingChat ? "대화방 생성 중..." : "💬 대화 시작하기"}
+                </button>
+                <button
+                    onClick={handleShareLink}
+                    className="px-4 py-3.5 bg-black border border-white/30 text-white hover:bg-white/5 rounded-xl"
+                    title="링크 공유"
+                >
+                    <Share2 className="w-5 h-5" />
                 </button>
             </div>
 
