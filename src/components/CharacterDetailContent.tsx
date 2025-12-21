@@ -291,7 +291,7 @@ export function CharacterDetailContent({
                         <User className="w-4 h-4" /> 소개
                     </span>
                 </div>
-                <div className="text-white/90 leading-relaxed prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:my-2">
+                <div className="text-white/90 leading-relaxed prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:my-3 [&_br]:block [&_br]:content-[''] [&_br]:mt-4">
                     <ReactMarkdown>
                         {character.introduction}
                     </ReactMarkdown>
@@ -305,7 +305,7 @@ export function CharacterDetailContent({
                         <MessageCircle className="w-4 h-4" /> 첫 인사
                     </span>
                 </div>
-                <div className="text-white/80 leading-relaxed prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:my-2">
+                <div className="text-white/80 leading-relaxed prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:my-3 [&_br]:block [&_br]:content-[''] [&_br]:mt-4">
                     <ReactMarkdown>
                         {character.greeting}
                     </ReactMarkdown>
