@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { User, MessageCircle } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { MarkdownContent } from "./MarkdownContent";
 
 interface CharacterDetailContentProps {
     characterId?: string;
@@ -265,11 +265,10 @@ export function CharacterDetailContent({
             {/* 대사 (tagline) */}
             {character.tagline && (
                 <div className="px-4 py-4 border-l-2 border-brand bg-white/5 mx-4 mt-4 rounded-r">
-                    <div className="text-white italic prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:m-0">
-                        <ReactMarkdown>
-                            {"\"" + character.tagline + "\""}
-                        </ReactMarkdown>
-                    </div>
+                    <MarkdownContent
+                        content={`"${character.tagline}"`}
+                        className="text-white italic"
+                    />
                 </div>
             )}
 
@@ -291,11 +290,10 @@ export function CharacterDetailContent({
                         <User className="w-4 h-4" /> 소개
                     </span>
                 </div>
-                <div className="text-white/90 leading-relaxed prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:my-3 [&_br]:block [&_br]:content-[''] [&_br]:mt-4">
-                    <ReactMarkdown>
-                        {character.introduction}
-                    </ReactMarkdown>
-                </div>
+                <MarkdownContent
+                    content={character.introduction}
+                    className="text-white/90"
+                />
             </div>
 
             {/* 첫 인사 섹션 - 회색 인용문 스타일 */}
@@ -305,11 +303,10 @@ export function CharacterDetailContent({
                         <MessageCircle className="w-4 h-4" /> 첫 인사
                     </span>
                 </div>
-                <div className="text-white/80 leading-relaxed prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:my-3 [&_br]:block [&_br]:content-[''] [&_br]:mt-4">
-                    <ReactMarkdown>
-                        {character.greeting}
-                    </ReactMarkdown>
-                </div>
+                <MarkdownContent
+                    content={character.greeting}
+                    className="text-white/80"
+                />
             </div>
 
             {/* 댓글 섹션 */}
