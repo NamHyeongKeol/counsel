@@ -191,8 +191,8 @@ export function ConversationList({
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 ml-2">
-                                    <span className="text-white/40 text-xs whitespace-nowrap">
+                                <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                                    <span className="text-white/40 text-[10px] whitespace-nowrap">
                                         {formatDate(conv.updatedAt)}
                                     </span>
                                     <button
