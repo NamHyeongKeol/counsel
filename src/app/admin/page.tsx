@@ -267,7 +267,7 @@ export default function AdminPage() {
                         systemPrompt: char.systemPrompt,
                         greeting: char.greeting,
                         age: char.age || undefined,
-                        gender: char.gender || undefined,
+                        gender: char.gender ? char.gender.toLowerCase() : undefined,
                         imageUrls: char.imageUrls || [],
                     });
                     successCount++;

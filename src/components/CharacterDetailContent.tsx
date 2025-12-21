@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { User, MessageCircle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface CharacterDetailContentProps {
     characterId?: string;
@@ -264,7 +265,11 @@ export function CharacterDetailContent({
             {/* 대사 (tagline) */}
             {character.tagline && (
                 <div className="px-4 py-4 border-l-2 border-brand bg-white/5 mx-4 mt-4 rounded-r">
-                    <p className="text-white italic">"{character.tagline}"</p>
+                    <div className="text-white italic prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:m-0">
+                        <ReactMarkdown>
+                            {"\"" + character.tagline + "\""}
+                        </ReactMarkdown>
+                    </div>
                 </div>
             )}
 
@@ -286,8 +291,10 @@ export function CharacterDetailContent({
                         <User className="w-4 h-4" /> 소개
                     </span>
                 </div>
-                <div className="text-white/90 leading-relaxed whitespace-pre-wrap">
-                    {character.introduction}
+                <div className="text-white/90 leading-relaxed prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:my-2">
+                    <ReactMarkdown>
+                        {character.introduction}
+                    </ReactMarkdown>
                 </div>
             </div>
 
@@ -298,8 +305,10 @@ export function CharacterDetailContent({
                         <MessageCircle className="w-4 h-4" /> 첫 인사
                     </span>
                 </div>
-                <div className="text-white/80 leading-relaxed whitespace-pre-wrap">
-                    {character.greeting}
+                <div className="text-white/80 leading-relaxed prose prose-invert max-w-none prose-strong:text-brand prose-strong:font-bold prose-em:text-white/60 prose-em:not-italic prose-p:my-2">
+                    <ReactMarkdown>
+                        {character.greeting}
+                    </ReactMarkdown>
                 </div>
             </div>
 
