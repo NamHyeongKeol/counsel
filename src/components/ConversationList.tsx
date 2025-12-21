@@ -107,7 +107,7 @@ export function ConversationList({
     const getPreview = (conv: any) => {
         if (conv.messages && conv.messages.length > 0) {
             const content = conv.messages[0].content;
-            return content.length > 30 ? content.slice(0, 30) + "..." : content;
+            return content.length > 60 ? content.slice(0, 60) + "..." : content;
         }
         return "대화를 시작해보세요";
     };
@@ -186,7 +186,7 @@ export function ConversationList({
                                                 </>
                                             )}
                                         </div>
-                                        <p className="text-white/50 text-xs truncate">
+                                        <p className="text-white/50 text-xs line-clamp-2">
                                             {getPreview(conv)}
                                         </p>
                                     </div>
