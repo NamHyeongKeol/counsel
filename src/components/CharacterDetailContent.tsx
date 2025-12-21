@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { LoadingSpinner } from "./LoadingSpinner";
-import { User, MessageCircle } from "lucide-react";
+import { User, MessageCircle, Share2 } from "lucide-react";
 import { MarkdownContent } from "./MarkdownContent";
 
 interface CharacterDetailContentProps {
@@ -121,6 +121,20 @@ export function CharacterDetailContent({
             console.error("대화 시작 실패:", error);
         } finally {
             setIsStartingChat(false);
+        }
+    };
+
+    // 링크 공유
+    const handleShareLink = async () => {
+        if (!character) return;
+        const shareUrl = `${window.location.origin}/character/${character.slug}`;
+
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert("링크가 복사되었습니다!");
+        } catch {
+            // 클립보드 API 실패 시 fallback
+            prompt("링크를 복사하세요:", shareUrl);
         }
     };
 
@@ -254,6 +268,15 @@ export function CharacterDetailContent({
                                 )}
                             </span>
                         </div>
+
+                        {/* 공유 버튼 */}
+                        <button
+                            onClick={handleShareLink}
+                            className="absolute top-4 right-4 p-2 bg-black/40 backdrop-blur rounded-full text-white hover:bg-black/60 transition-colors"
+                            title="링크 공유"
+                        >
+                            <Share2 className="w-5 h-5" />
+                        </button>
                     </div>
                 ) : (
                     <div className="aspect-square bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
